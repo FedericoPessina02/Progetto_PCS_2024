@@ -1,0 +1,21 @@
+@startuml
+
+class Global {
+	+ fratture: vector<Frattura>
+	+ id_tracce{vector<unsigned int>}
+	+ vertici_tracce{vector<array<double, 6>>}
+	+ fratture_tracce{vector<array<unsigned int,2>>}
+	+ lunghezze_tracce{vector<double>
+}
+
+class Frattura {
+	+id: unsigned int
+	+num_vertices: unsigned int
+	+vertices: vector<array<double, 3>>
+	+tracce_passanti: vector<unsigned int>
+	+tracce_interne: vector <unsigned int>
+	+Frattura(id, num_vertices, vertices)
+}
+
+@enduml
+
