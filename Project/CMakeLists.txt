@@ -39,10 +39,16 @@ list(APPEND DFN_LINKED_LIBRARIES PRIVATE GTest::gmock_main)
 # Insert Sources
 ################################################################################
 add_subdirectory(src)
+add_subdirectory(src/classes)
 
-list(APPEND DFN_SOURCES ${DFN_sources})
-list(APPEND DFN_HEADERS ${DFN_headers})
-list(APPEND DFN_INCLUDE ${DFN_includes})
+list(APPEND DFN_SOURCES ${DFN_sources_src})
+list(APPEND DFN_HEADERS ${DFN_headers_src})
+list(APPEND DFN_INCLUDE ${DFN_includes_src})
+list(APPEND DFN_SOURCES ${DFN_sources_classes})
+list(APPEND DFN_HEADERS ${DFN_headers_classes})
+list(APPEND DFN_INCLUDE ${DFN_includes_classes})
+
+message(${DFN_SOURCES})
 
 # Create executable
 ################################################################################
