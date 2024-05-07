@@ -1,0 +1,83 @@
+@startuml
+
+package Internals{
+
+class Fracture {
+	+ id: unsigned int
+	+ num_vertices: unsigned int
+	+ vertices: MatrixXd
+	+ passing_traces: vector<unsigned int>
+	+ internal_traces: vector <unsigned int>
+	- plane_normal: Vector3d
+	- sphere_radius: double
+	+ void Fracture(id, num_vertices, vertices)
+	+ void generateTraces(other: Fracture, TracesMesh* mesh)
+	+ PolygonalMesh generatePolygonalMesh()
+}
+
+struct TracesMesh {
+  + traces_id: vector<unsigned int>
+	+ traces_vertices: vector<array<double, 6>>
+	+ traces_fracture: vector<array<unsigned int,2>>
+	+ traces_length: vector<double>
+	+ void TracesMesh()
+	+ void addTrace()
+}
+
+struct PolygonalMesh {
+  + FractureId: unsigned int
+  + IdCell0Ds: vector<unsigned int>
+  + CoordinateCell0Ds: vector<Vector3d>
+  + IdCell1Ds: vector<unsigned int>
+  + VerticesCell1Ds: vector<array<unsigned int, 2>>
+  + IdCell2Ds: vector<unsigned int>
+  + VerticesCell2Ds: vector<vector<unsigned int>>
+  + EdgesCell2Ds: vector<vector<unsigned int>>
+  + void PolygonalMesh()
+}
+
+struct Global {
+	+ fractures: vector<Fracture>
+	+ cut_fractures: vector<PolygonalMesh>
+	+ traces: TracesMesh
+}
+
+package Algorithms <<Rectangle>> {
+  protocol calculateTraces {
+    Ottimizza le fratture da intersecare e chiama l'algoritmo
+  }
+  protocol cutFractures {
+    Utilizza le informazioni contenute nell'istanza della frattura
+    per produrre una mesh della frattura tagliata
+  }
+  protocol sortTraces {
+    Ordina un array di tracce in base alla lunghezza (Heapsort?)
+  }
+}
+
+package Utils <<Rectangle>> {
+  protocol FractureInput {
+    Legge il file di input con le fratture
+  }
+  protocol TraceOutput {
+    Crea il file di output con l'elenco delle tracce
+  }
+  protocol PolygonalMeshOutput {
+    Esporta le mesh ritagliate con paraview
+  }
+}
+
+}
+
+package Externals {
+
+package Eigen <<Rectangle>> {
+}
+package GoogleTest <<Rectangle>> {
+}
+package Paraview <<Rectangle>> {
+}
+
+}
+
+@enduml
