@@ -13,5 +13,5 @@ struct PolygonalMesh {
     vector<unsigned int> IdCell2Ds;
     vector<vector<unsigned int>> VerticesCell2Ds;
     vector<vector<unsigned int>> EdgesCell2Ds;
-    PolygonalMesh();
+    PolygonalMesh() = default;
 };

@@ -9,6 +9,6 @@ struct TracesMesh {
     vector<array<double,6>> traces_vertices;
     vector<array<unsigned int,2>> traces_fracture;
     vector<double> traces_length;
-    TracesMesh();
-    void addTrace();
+    TracesMesh() = default;
+    void addTrace(unsigned int& id, array<double,6>& vertices, vector<array<unsigned int,2>>& traces_fracture);
 };
