@@ -24,7 +24,7 @@ vector<Fracture> fractureInput(const string& filename){
     getline(infile,line);
     unsigned int n_fractures = stoi(line);
 
-    output.resize(n_fractures);
+    output.reserve(n_fractures);
     for (unsigned int i= 0; i < n_fractures; i++){
         getline(infile,line);
 
@@ -62,7 +62,9 @@ vector<Fracture> fractureInput(const string& filename){
             vertices(2, j) = stod(z_coord);
         }
 
+
         Fracture element = Fracture(id, n_vertices, vertices);
+        element.normalVector();
         output.push_back(element);
     }
 
