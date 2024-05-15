@@ -6,6 +6,6 @@ using namespace std;
 
 int main()
 {
-    vector<Fracture> fractures = Utils::fractureInput("C:/Progetto_PCS_2024/Project/DFN/FR3_data.txt");
+    vector<Fracture> fractures = Utils::fractureInput("DFN/FR3_data.txt");
     return 0;
 }

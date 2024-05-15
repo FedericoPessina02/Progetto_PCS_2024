@@ -7,7 +7,7 @@ class Fracture {
 	+ num_vertices: unsigned int
 	+ vertices: MatrixXd
 	+ passing_traces: vector<unsigned int>
-	+ internal_traces: vector <unsigned int>
+	+ internal_traces: vector<unsigned int>
 	- plane_normal: Vector3d
 	- sphere_radius: double
 	+ void Fracture(id, num_vertices, vertices)

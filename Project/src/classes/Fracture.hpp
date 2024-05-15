@@ -15,9 +15,9 @@ public:
     Fracture() = default;
     Fracture(unsigned int& _id,unsigned int& _num_vertices, Eigen::MatrixXd& _vertices);
     void generateTrace(Fracture& other, TracesMesh& mesh);
+    void calculateSphere();
     PolygonalMesh generatePolygonalMesh();
-private:
-    double barycenter;
+    Eigen::Vector3d barycenter;
     double radius;
 };
 
