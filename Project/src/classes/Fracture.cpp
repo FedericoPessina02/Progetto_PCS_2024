@@ -7,9 +7,6 @@
 #include "Algorithms.hpp"
 #include "Utils.hpp"
 
-// for (type i: vector)
-//     std::cout << i << ' ';
-
 using namespace std;
 
 Fracture::Fracture(unsigned int& _id,unsigned int& _num_vertices, Eigen::MatrixXd& _vertices) {
@@ -126,13 +123,11 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
                 break;
             }
         }
+        punti_distinti.erase(remove(punti_distinti.begin(), punti_distinti.end(), doppione), punti_distinti.end());
 
         double min_length = numeric_limits<double>::max();
         array<Eigen::Vector3d, 2> punti_distinti_array;
         for (Eigen::Vector3d& i: punti_distinti) {
-            if ((doppione-i).norm() < 8*numeric_limits<double>::epsilon()) {
-                continue;
-            }
             double new_length = (doppione-i).norm();
             if (new_length < min_length) {
                 min_length = new_length;

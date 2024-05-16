@@ -9,6 +9,6 @@ using namespace std;
 
 namespace Algorithms {
 
-void cutTraces(vector<Fracture> fractures, TracesMesh& mesh);
+void cutTraces(vector<Fracture>& fractures, TracesMesh& mesh);
 
 }
