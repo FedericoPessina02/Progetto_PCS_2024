@@ -3,10 +3,13 @@
 #include "Eigen/Eigen"
 #include "vector"
 
-array<double,3> crossProduct(const array<double,3>& lato1,const array<double,3>& lato2){
-    array<double,3> normal;
-    normal[0] = lato1[1]*lato2[2]-lato1[2]*lato2[1];
-    normal[1] = lato1[2]*lato2[0]-lato1[0]*lato2[2];
-    normal[2] = lato1[0]*lato2[1]-lato1[1]*lato2[0];
-    return normal;
+using namespace std;
+
+namespace Algorithms {
+
+void cutTraces(vector<Fracture> fractures, TracesMesh& mesh) {
+    fractures[0].generateTrace(fractures[1], mesh);
+    fractures[1].generateTrace(fractures[2], mesh);
+}
+
 }

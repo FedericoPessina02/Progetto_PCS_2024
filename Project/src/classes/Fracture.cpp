@@ -5,6 +5,10 @@
 #include "PolygonalMesh.hpp"
 #include "TracesMesh.hpp"
 #include "Algorithms.hpp"
+#include "Utils.hpp"
+
+// for (type i: vector)
+//     std::cout << i << ' ';
 
 using namespace std;
 
@@ -36,7 +40,8 @@ vector<Eigen::Vector3d> Fracture::calculateIntersectionsPoints(Eigen::Vector3d l
         if (lato.cross(line).norm() < 5*numeric_limits<double>::epsilon()) {
             continue; // il lato è parallelo alla traccia non ha senso cercare un'intersezione
         }
-        Eigen::Matrix2d A;
+        Eigen::MatrixXd A;
+        A.resize(3,2);
         A << lato, -1*line;
         Eigen::Vector3d b = point - vertices.col(i);
         // riduco a due equazioni (significative)
@@ -53,8 +58,8 @@ vector<Eigen::Vector3d> Fracture::calculateIntersectionsPoints(Eigen::Vector3d l
             b_values << b(0), b(2);
         }
 
-        Eigen::Vector3d parameters = Coeffs.lu().solve(b_values);
-        if (0<=parameters(0) && parameters(0)<=1) {
+        Eigen::Vector2d parameters = Coeffs.lu().solve(b_values);
+        if (0<=parameters(0) && parameters(0)<1) {
             Eigen::Vector3d point = vertices.col(i) + parameters(0)*lato;
             result.push_back(point);
         }
@@ -82,11 +87,130 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
 
     vector<Eigen::Vector3d> punti_1 = calculateIntersectionsPoints(t, p);
     vector<Eigen::Vector3d> punti_2 = other.calculateIntersectionsPoints(t, p);
-    // escludere caso di traccia impropria con i punti estremali e poi prendere i due interni
+
+    // se si verifica la condizione allora la traccia è un punto singolo (ma non si verifica)
+    // if ((punti_1[0]-punti_1[1]).norm() < 8*numeric_limits<double>::epsilon()) {
+    //     return;
+    // }
+    // if ((punti_2[0]-punti_2[1]).norm() < 8*numeric_limits<double>::epsilon()) {
+    //     return;
+    // }
+
+    vector<Eigen::Vector3d> punti_distinti = Utils::calculateDistinctPoints(punti_1, punti_2);
+
+    if (punti_distinti.size() == 2) {
+        array<Eigen::Vector3d, 2> punti_distinti_array;
+        copy_n(make_move_iterator(punti_distinti.begin()), 2, punti_distinti_array.begin());
+        array<unsigned int, 2> fractures_id = {id, other.id};
+        mesh.addTrace(trace_id, punti_distinti_array, fractures_id);
+        passant_traces.push_back(id);
+        other.passant_traces.push_back(id);
+        return;
+    }
+    if (punti_distinti.size() == 3) {
+        Eigen::Vector3d doppione;
+        for (Eigen::Vector3d& i: punti_distinti) {
+            unsigned int counter = 0;
+            for (Eigen::Vector3d& a: punti_1) {
+                if ((i-a).norm() < 8*numeric_limits<double>::epsilon()) {
+                    counter += 1;
+                }
+            }
+            for (Eigen::Vector3d& a: punti_2) {
+                if ((i-a).norm() < 8*numeric_limits<double>::epsilon()) {
+                    counter += 1;
+                }
+            }
+            if (counter == 2) {
+                doppione = i;
+                break;
+            }
+        }
+
+        double min_length = numeric_limits<double>::max();
+        array<Eigen::Vector3d, 2> punti_distinti_array;
+        for (Eigen::Vector3d& i: punti_distinti) {
+            if ((doppione-i).norm() < 8*numeric_limits<double>::epsilon()) {
+                continue;
+            }
+            double new_length = (doppione-i).norm();
+            if (new_length < min_length) {
+                min_length = new_length;
+                punti_distinti_array = {doppione, i};
+            }
+        }
+        array<unsigned int, 2> fractures_id = {id, other.id};
+        mesh.addTrace(trace_id, punti_distinti_array, fractures_id);
+
+        double punti_1_length = (punti_1[0] - punti_1[1]).norm();
+        if (abs(min_length-punti_1_length) < 8*numeric_limits<double>::epsilon()) {
+            passant_traces.push_back(trace_id);
+            other.internal_traces.push_back(trace_id);
+        } else {
+            internal_traces.push_back(trace_id);
+            other.passant_traces.push_back(trace_id);
+        }
+        return;
+    }
+
+    vector<Eigen::Vector3d>& punti = punti_1;
+    double distanza = 0;
+    Eigen::Vector3d estremo;
+    for (unsigned int i = 0; i < punti_1.size(); i++) {
+        for (unsigned int j = 0; j < punti_2.size(); j++) {
+            if ((punti_1[i]-punti_2[j]).norm() > distanza) {
+                estremo = punti_1[i];
+            }
+        }
+    }
+    if ((punti_2[0]-punti_2[1]).norm() > distanza) {
+        estremo = punti_2[0];
+        punti = punti_2;
+    }
+    punti_distinti.erase(remove(punti_distinti.begin(), punti_distinti.end(), estremo), punti_distinti.end());
+
+    Eigen::Vector3d punto_vicini;
+    distanza = numeric_limits<double>::max();
+    for (Eigen::Vector3d& i: punti_distinti) {
+        if ((i-estremo).norm() < distanza) {
+            punto_vicini = i;
+            distanza = (i-estremo).norm();
+        }
+    }
+
+    if (find(punti.begin(), punti.end(), punto_vicini) != punti.end()) {
+        return;
+    }
+
+    punti_distinti.erase(remove(punti_distinti.begin(), punti_distinti.end(), punto_vicini), punti_distinti.end());
+    Eigen::Vector3d punto_meno_vicini;
+    distanza = numeric_limits<double>::max();
+    for (Eigen::Vector3d& i: punti_distinti) {
+        if ((i-estremo).norm() < distanza) {
+            punto_meno_vicini = i;
+            distanza = (i-estremo).norm();
+        }
+    }
+
+    vector<Eigen::Vector3d> punti_distinti_vector = {punto_vicini, punto_meno_vicini};
+    array<Eigen::Vector3d, 2> punti_distinti_array = {punto_vicini, punto_meno_vicini};
+    array<unsigned int, 2> fractures_id = {id, other.id};
+    mesh.addTrace(trace_id, punti_distinti_array, fractures_id);
+
+    if (Utils::compareSegments(punti_distinti_vector, punti_1)) {
+        passant_traces.push_back(trace_id);
+    } else {
+        internal_traces.push_back(trace_id);
+    }
+
+    if (Utils::compareSegments(punti_distinti_vector, punti_2)) {
+        other.passant_traces.push_back(trace_id);
+    } else {
+        other.internal_traces.push_back(trace_id);
+    }
 }
 
 PolygonalMesh generatePolygonalMesh() {
     PolygonalMesh output;
     return output;
 }
-

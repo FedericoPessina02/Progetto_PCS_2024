@@ -11,6 +11,31 @@ using namespace std;
 
 namespace Utils{
 
+vector<Eigen::Vector3d> calculateDistinctPoints(vector<Eigen::Vector3d>& a, vector<Eigen::Vector3d>& b) {
+    // la funzione assume che  a e b siano due coppie di punti distinti tra di loro
+    vector<Eigen::Vector3d> result;
+    result.push_back(a[0]);
+    for (const Eigen::Vector3d& b_el : b) {
+        if ((a[0]-b_el).norm() >= 8*numeric_limits<double>::epsilon()) {
+            result.push_back(b_el);
+        }
+    }
+    if ((a[1]-b[0]).norm() >= 8*numeric_limits<double>::epsilon() && (a[1]-b[1]).norm() >= 8*numeric_limits<double>::epsilon()) {
+        result.push_back(a[1]);
+    }
+    return result;
+}
+
+bool compareSegments(vector<Eigen::Vector3d>& a, vector<Eigen::Vector3d>& b) {
+    if (a[0] == b[0] && a[1] == b[1]) {
+        return true;
+    }
+    if (a[0] == b[1] && a[1] == b[0]) {
+        return true;
+    }
+    return false;
+}
+
 vector<Fracture> fractureInput(const string& filename){
     vector<Fracture> output;
     ifstream infile(filename);
@@ -71,4 +96,4 @@ vector<Fracture> fractureInput(const string& filename){
     return output;
 }
 
-};
+}

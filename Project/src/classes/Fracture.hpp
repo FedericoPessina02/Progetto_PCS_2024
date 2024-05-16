@@ -11,7 +11,8 @@ public:
     unsigned int id;
     unsigned int num_vertices;
     Eigen::MatrixXd vertices;
-    vector<unsigned int> internal_traces; //id delle fratture che lo intersecano
+    vector<unsigned int> internal_traces;
+    vector<unsigned int> passant_traces;
     Fracture() = default;
     Fracture(unsigned int& _id,unsigned int& _num_vertices, Eigen::MatrixXd& _vertices);
     void generateTrace(Fracture& other, TracesMesh& mesh);
