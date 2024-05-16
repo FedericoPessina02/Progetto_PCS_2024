@@ -64,7 +64,6 @@ vector<Fracture> fractureInput(const string& filename){
 
 
         Fracture element = Fracture(id, n_vertices, vertices);
-        element.normalVector();
         output.push_back(element);
     }
 

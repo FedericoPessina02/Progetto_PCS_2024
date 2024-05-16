@@ -15,11 +15,10 @@ public:
     Fracture() = default;
     Fracture(unsigned int& _id,unsigned int& _num_vertices, Eigen::MatrixXd& _vertices);
     void generateTrace(Fracture& other, TracesMesh& mesh);
-    void normalVector();
+    void calculateNormalVector();
+    vector<Eigen::Vector3d> calculateIntersectionsPoints(Eigen::Vector3d line, Eigen::Vector3d point);
     PolygonalMesh generatePolygonalMesh();
-    array<double,3> normal; //mi salvo la normale del piano contenente il poligono
-private:
-    double barycenter;
-    double radius;
+    Eigen::Vector3d normal; //mi salvo la normale del piano contenente il poligono
+    double plane_d;
 };
 
