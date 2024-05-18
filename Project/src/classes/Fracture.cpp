@@ -39,7 +39,8 @@ vector<Eigen::Vector3d> Fracture::calculateIntersectionsPoints(Eigen::Vector3d l
         }
         Eigen::MatrixXd A;
         A.resize(3,2);
-        A << lato, -1*line;
+        A.col(0) = lato;
+        A.col(1) = -1*line;
         Eigen::Vector3d b = point - vertices.col(i);
         // riduco a due equazioni (significative)
         Eigen::Matrix2d Coeffs;
@@ -55,7 +56,8 @@ vector<Eigen::Vector3d> Fracture::calculateIntersectionsPoints(Eigen::Vector3d l
             b_values << b(0), b(2);
         }
 
-        Eigen::Vector2d parameters = Coeffs.lu().solve(b_values);
+        //Eigen::Vector2d parameters = Coeffs.lu().solve(b_values);
+        Eigen::Vector2d parameters = A.colPivHouseholderQr().solve(b);
         if (0<=parameters(0) && parameters(0)<1) {
             Eigen::Vector3d point = vertices.col(i) + parameters(0)*lato;
             result.push_back(point);
@@ -71,7 +73,7 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
     array<Eigen::Vector3d,2> trace_verteces;
     unsigned int trace_id = mesh.traces_id.size();
 
-    Eigen::Vector3d t = other.normal.cross(normal);
+    Eigen::Vector3d t = normal.cross(other.normal);
     Eigen::Matrix3d A;
     A.row(0) = normal;
     A.row(1) = other.normal;
@@ -84,6 +86,14 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
 
     vector<Eigen::Vector3d> punti_1 = calculateIntersectionsPoints(t, p);
     vector<Eigen::Vector3d> punti_2 = other.calculateIntersectionsPoints(t, p);
+
+    if (punti_1.size()+punti_2.size()!=4) {
+        if (punti_1.size()+punti_2.size()>4) {
+            cerr << "More than 4 points of intersections";
+            return;
+        }
+        return;
+    }
 
     // se si verifica la condizione allora la traccia è un punto singolo (ma non si verifica)
     // if ((punti_1[0]-punti_1[1]).norm() < 8*numeric_limits<double>::epsilon()) {
@@ -109,12 +119,12 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
         for (Eigen::Vector3d& i: punti_distinti) {
             unsigned int counter = 0;
             for (Eigen::Vector3d& a: punti_1) {
-                if ((i-a).norm() < 8*numeric_limits<double>::epsilon()) {
+                if ((i-a).squaredNorm() < 8*numeric_limits<double>::epsilon()) {
                     counter += 1;
                 }
             }
             for (Eigen::Vector3d& a: punti_2) {
-                if ((i-a).norm() < 8*numeric_limits<double>::epsilon()) {
+                if ((i-a).squaredNorm() < 8*numeric_limits<double>::epsilon()) {
                     counter += 1;
                 }
             }
@@ -123,12 +133,14 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
                 break;
             }
         }
-        punti_distinti.erase(remove(punti_distinti.begin(), punti_distinti.end(), doppione), punti_distinti.end());
 
         double min_length = numeric_limits<double>::max();
         array<Eigen::Vector3d, 2> punti_distinti_array;
         for (Eigen::Vector3d& i: punti_distinti) {
-            double new_length = (doppione-i).norm();
+            if (i == doppione) {
+                continue;
+            }
+            double new_length = (doppione-i).squaredNorm();
             if (new_length < min_length) {
                 min_length = new_length;
                 punti_distinti_array = {doppione, i};
@@ -137,7 +149,7 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
         array<unsigned int, 2> fractures_id = {id, other.id};
         mesh.addTrace(trace_id, punti_distinti_array, fractures_id);
 
-        double punti_1_length = (punti_1[0] - punti_1[1]).norm();
+        double punti_1_length = (punti_1[0] - punti_1[1]).squaredNorm();
         if (abs(min_length-punti_1_length) < 8*numeric_limits<double>::epsilon()) {
             passant_traces.push_back(trace_id);
             other.internal_traces.push_back(trace_id);
@@ -153,23 +165,25 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
     Eigen::Vector3d estremo;
     for (unsigned int i = 0; i < punti_1.size(); i++) {
         for (unsigned int j = 0; j < punti_2.size(); j++) {
-            if ((punti_1[i]-punti_2[j]).norm() > distanza) {
+            if ((punti_1[i]-punti_2[j]).squaredNorm() > distanza) {
                 estremo = punti_1[i];
             }
         }
     }
-    if ((punti_2[0]-punti_2[1]).norm() > distanza) {
+    if ((punti_2[0]-punti_2[1]).squaredNorm() > distanza) {
         estremo = punti_2[0];
         punti = punti_2;
     }
-    punti_distinti.erase(remove(punti_distinti.begin(), punti_distinti.end(), estremo), punti_distinti.end());
 
     Eigen::Vector3d punto_vicini;
     distanza = numeric_limits<double>::max();
     for (Eigen::Vector3d& i: punti_distinti) {
-        if ((i-estremo).norm() < distanza) {
+        if (i == estremo) {
+            continue;
+        }
+        if ((i-estremo).squaredNorm() < distanza) {
             punto_vicini = i;
-            distanza = (i-estremo).norm();
+            distanza = (i-estremo).squaredNorm();
         }
     }
 
@@ -177,13 +191,15 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
         return;
     }
 
-    punti_distinti.erase(remove(punti_distinti.begin(), punti_distinti.end(), punto_vicini), punti_distinti.end());
     Eigen::Vector3d punto_meno_vicini;
     distanza = numeric_limits<double>::max();
     for (Eigen::Vector3d& i: punti_distinti) {
-        if ((i-estremo).norm() < distanza) {
+        if (i == estremo || i == punto_vicini) {
+            continue;
+        }
+        if ((i-estremo).squaredNorm() < distanza) {
             punto_meno_vicini = i;
-            distanza = (i-estremo).norm();
+            distanza = (i-estremo).squaredNorm();
         }
     }
 
