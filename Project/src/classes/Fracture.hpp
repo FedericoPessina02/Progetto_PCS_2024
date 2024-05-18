@@ -17,9 +17,12 @@ public:
     Fracture(unsigned int& _id,unsigned int& _num_vertices, Eigen::MatrixXd& _vertices);
     void generateTrace(Fracture& other, TracesMesh& mesh);
     void calculateNormalVector();
-    vector<Eigen::Vector3d> calculateIntersectionsPoints(Eigen::Vector3d line, Eigen::Vector3d point);
-    PolygonalMesh generatePolygonalMesh();
+    void calculateSphere();
     Eigen::Vector3d normal; //mi salvo la normale del piano contenente il poligono
     double plane_d;
+    Eigen::Vector3d barycenter;
+    double radius;
+    vector<Eigen::Vector3d> calculateIntersectionsPoints(Eigen::Vector3d line, Eigen::Vector3d point);
+    PolygonalMesh generatePolygonalMesh();
 };
 
