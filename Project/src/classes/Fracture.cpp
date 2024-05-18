@@ -20,7 +20,7 @@ Fracture::Fracture(unsigned int& _id,unsigned int& _num_vertices, Eigen::MatrixX
 void Fracture::calculateSphere() {
     for (int i = 0; i <3; i++) {
         double average = 0;
-        for (int j =  0; j < num_vertices; j++) {
+        for (unsigned int j =  0; j < num_vertices; j++) {
             average += vertices(i, j);
         }
         average /= num_vertices;
@@ -28,10 +28,10 @@ void Fracture::calculateSphere() {
     }
 
     double max_radius = 0;
-    for (int i = 0; i < num_vertices; i++) {
+    for (unsigned int i = 0; i < num_vertices; i++) {
         Eigen::Vector3d vertex = vertices.col(i) - barycenter;
-        if (vertex.norm() > max_radius) {
-            max_radius = vertex.norm();
+        if (vertex.squaredNorm() > max_radius) {
+            max_radius = vertex.squaredNorm();
         }
     }
     radius = max_radius;
@@ -64,19 +64,18 @@ vector<Eigen::Vector3d> Fracture::calculateIntersectionsPoints(Eigen::Vector3d l
         A.col(1) = -1*line;
         Eigen::Vector3d b = point - vertices.col(i);
         // riduco a due equazioni (significative)
-        Eigen::Matrix2d Coeffs;
-        Eigen::Vector2d b_values;
-        if (abs(A.block(0, 0, 2, 2).determinant()) >= 5*numeric_limits<double>::epsilon()) {
-            Coeffs = A.block(0, 0, 2, 2);
-            b_values << b(0), b(1);
-        } else if (abs(A.block(1, 0, 2, 2).determinant()) >= 5*numeric_limits<double>::epsilon()) {
-            Coeffs = A.block(1, 0, 2, 2);
-            b_values << b(1), b(2);
-        } else {
-            Coeffs << line(0), lato(0), line(2), lato(2); // controllare che funzioni
-            b_values << b(0), b(2);
-        }
-
+        // Eigen::Matrix2d Coeffs;
+        // Eigen::Vector2d b_values;
+        // if (abs(A.block(0, 0, 2, 2).determinant()) >= 5*numeric_limits<double>::epsilon()) {
+        //     Coeffs = A.block(0, 0, 2, 2);
+        //     b_values << b(0), b(1);
+        // } else if (abs(A.block(1, 0, 2, 2).determinant()) >= 5*numeric_limits<double>::epsilon()) {
+        //     Coeffs = A.block(1, 0, 2, 2);
+        //     b_values << b(1), b(2);
+        // } else {
+        //     Coeffs << line(0), lato(0), line(2), lato(2); // controllare che funzioni
+        //     b_values << b(0), b(2);
+        // }
         //Eigen::Vector2d parameters = Coeffs.lu().solve(b_values);
         Eigen::Vector2d parameters = A.colPivHouseholderQr().solve(b);
         if (0<=parameters(0) && parameters(0)<1) {
@@ -111,6 +110,10 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
     if (punti_1.size()+punti_2.size()!=4) {
         if (punti_1.size()+punti_2.size()>4) {
             cerr << "More than 4 points of intersections";
+            return;
+        }
+        if (punti_1.size() == 1 || punti_2.size() == 1) {
+            cerr << "1 punto di intersezione" << endl;
             return;
         }
         return;
