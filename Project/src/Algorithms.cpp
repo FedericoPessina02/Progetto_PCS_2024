@@ -33,8 +33,8 @@ void assignPartition(vector<Fracture>& fractures, map<int, vector<Fracture>>& id
                 break;
             }
         }
-        //id_to_fractures[el.partition_id].push_back(el);
-        id_to_fractures[0].push_back(el);
+        id_to_fractures[el.partition_id].push_back(el);
+        // id_to_fractures[0].push_back(el);
     }
 }
 
