@@ -119,14 +119,6 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
         return;
     }
 
-    // se si verifica la condizione allora la traccia è un punto singolo (ma non si verifica)
-    // if ((punti_1[0]-punti_1[1]).norm() < 8*numeric_limits<double>::epsilon()) {
-    //     return;
-    // }
-    // if ((punti_2[0]-punti_2[1]).norm() < 8*numeric_limits<double>::epsilon()) {
-    //     return;
-    // }
-
     vector<Eigen::Vector3d> punti_distinti = Utils::calculateDistinctPoints(punti_1, punti_2);
 
     if (punti_distinti.size() == 2) {

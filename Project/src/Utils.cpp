@@ -36,7 +36,7 @@ bool compareSegments(vector<Eigen::Vector3d>& a, vector<Eigen::Vector3d>& b) {
     return false;
 }
 
-vector<Fracture> fractureInput(const string& filename){
+vector<Fracture> fractureInput(const string& filename, array<double, 6>& domain_borders){
     vector<Fracture> output;
     ifstream infile(filename);
     if (infile.fail()) {
@@ -50,6 +50,14 @@ vector<Fracture> fractureInput(const string& filename){
     unsigned int n_fractures = stoi(line);
 
     output.reserve(n_fractures);
+
+    double x_coord_min = numeric_limits<double>::max();
+    double x_coord_max = numeric_limits<double>::min();
+    double y_coord_min = numeric_limits<double>::max();
+    double y_coord_max = numeric_limits<double>::min();
+    double z_coord_min = numeric_limits<double>::max();
+    double z_coord_max = numeric_limits<double>::min();
+
     for (unsigned int i= 0; i < n_fractures; i++){
         getline(infile,line);
 
@@ -71,26 +79,52 @@ vector<Fracture> fractureInput(const string& filename){
             string x_coord;
             getline(x_line, x_coord, ';');
             vertices(0, j) = stod(x_coord);
+            if (stod(x_coord) < x_coord_min) {
+                x_coord_min = stod(x_coord);
+            }
+            if (stod(x_coord) > x_coord_max) {
+                x_coord_max = stod(x_coord);
+            }
         }
+
         getline(infile,line);
         istringstream y_line(line);
         for (unsigned int j=0; j<n_vertices; j++) {
             string y_coord;
             getline(y_line, y_coord, ';');
             vertices(1, j) = stod(y_coord);
+            if (stod(y_coord) < y_coord_min) {
+                y_coord_min = stod(y_coord);
+            }
+            if (stod(y_coord) > y_coord_max) {
+                y_coord_max = stod(y_coord);
+            }
         }
+
         getline(infile,line);
         istringstream z_line(line);
         for (unsigned int j=0; j<n_vertices; j++) {
             string z_coord;
             getline(z_line, z_coord, ';');
             vertices(2, j) = stod(z_coord);
+            if (stod(z_coord) < z_coord_min) {
+                z_coord_min = stod(z_coord);
+            }
+            if (stod(z_coord) > z_coord_max) {
+                z_coord_max = stod(z_coord);
+            }
         }
-
 
         Fracture element = Fracture(id, n_vertices, vertices);
         output.push_back(element);
     }
+
+    domain_borders[0] = x_coord_min;
+    domain_borders[1] = x_coord_max;
+    domain_borders[2] = y_coord_min;
+    domain_borders[3] = y_coord_max;
+    domain_borders[4] = z_coord_min;
+    domain_borders[5] = z_coord_max;
 
     infile.close();
     return output;
