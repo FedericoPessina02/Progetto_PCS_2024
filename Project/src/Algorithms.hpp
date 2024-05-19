@@ -9,7 +9,7 @@ using namespace std;
 
 namespace Algorithms {
 
-void assignPartition(vector<Fracture>& fractures, map<int, vector<Fracture>>& id_to_fractures, array<double, 6>& domain_borders, const int partitions_number);
+map<int, vector<Fracture>> assignPartition(vector<Fracture>& fractures, array<double, 6>& domain_borders, const int partitions_number);
 
 void cutTracesInsidePartition(vector<Fracture>& fractures, TracesMesh& mesh);
 

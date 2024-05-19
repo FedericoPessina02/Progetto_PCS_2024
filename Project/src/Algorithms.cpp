@@ -7,7 +7,8 @@ using namespace std;
 
 namespace Algorithms {
 
-void assignPartition(vector<Fracture>& fractures, map<int, vector<Fracture>>& id_to_fractures, array<double, 6>& domain_borders, const int partitions_number) {
+map<int, vector<Fracture>> assignPartition(vector<Fracture>& fractures, array<double, 6>& domain_borders, const int partitions_number) {
+    map<int, vector<Fracture>> id_to_fractures;
     // domain_borders = {x_min, x_max, y_min, y_max, z_min, z_max}
     // partitions_number è il numero di partizioni per dimensione (2-->8 partizioni, 3-->27 partizioni, ecc ecc)
     array<double, 3> chunk_size = {
@@ -33,9 +34,10 @@ void assignPartition(vector<Fracture>& fractures, map<int, vector<Fracture>>& id
                 break;
             }
         }
-        id_to_fractures[el.partition_id].push_back(el);
-        // id_to_fractures[0].push_back(el);
+        id_to_fractures[0].push_back(el);
     }
+    fractures.clear();
+    return id_to_fractures;
 }
 
 void cutTracesInsidePartition(vector<Fracture>& fractures, TracesMesh& mesh) {
@@ -64,6 +66,9 @@ void cutTracesOverlapping(vector<Fracture>& overlapping, vector<Fracture>& other
 
 void cutTraces(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh, const int dimension) {
     for (int id = 0; id <= dimension; id++) {
+        if (id_to_fractures[id].size() == 0) {
+            continue;
+        }
         cutTracesInsidePartition(id_to_fractures[id], mesh);
         if (id != 0) {
             cutTracesOverlapping(id_to_fractures[0], id_to_fractures[id], mesh);
