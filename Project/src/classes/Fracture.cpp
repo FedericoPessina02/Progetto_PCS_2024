@@ -46,47 +46,6 @@ void Fracture::calculateNormalVector(){
     plane_d = normal.dot(vertices.col(0));
 }
 
-vector<Eigen::Vector3d> Fracture::calculateIntersectionsPoints(Eigen::Vector3d line, Eigen::Vector3d point) {
-    vector<Eigen::Vector3d> result;
-    for (unsigned int i = 0; i < num_vertices; i++) {
-        Eigen::Vector3d lato;
-        if (i == num_vertices-1) {
-            lato = vertices.col(0) - vertices.col(i);
-        } else {
-            lato = vertices.col(i+1) - vertices.col(i);
-        }
-        if (lato.cross(line).norm() < 5*numeric_limits<double>::epsilon()) {
-            continue; // il lato è parallelo alla traccia non ha senso cercare un'intersezione
-        }
-        Eigen::MatrixXd A;
-        A.resize(3,2);
-        A.col(0) = lato;
-        A.col(1) = -1*line;
-        Eigen::Vector3d b = point - vertices.col(i);
-        // riduco a due equazioni (significative)
-        // Eigen::Matrix2d Coeffs;
-        // Eigen::Vector2d b_values;
-        // if (abs(A.block(0, 0, 2, 2).determinant()) >= 5*numeric_limits<double>::epsilon()) {
-        //     Coeffs = A.block(0, 0, 2, 2);
-        //     b_values << b(0), b(1);
-        // } else if (abs(A.block(1, 0, 2, 2).determinant()) >= 5*numeric_limits<double>::epsilon()) {
-        //     Coeffs = A.block(1, 0, 2, 2);
-        //     b_values << b(1), b(2);
-        // } else {
-        //     Coeffs << line(0), lato(0), line(2), lato(2); // controllare che funzioni
-        //     b_values << b(0), b(2);
-        // }
-        //Eigen::Vector2d parameters = Coeffs.lu().solve(b_values);
-        Eigen::Vector2d parameters = A.colPivHouseholderQr().solve(b);
-        if (0<=parameters(0) && parameters(0)<1) {
-            Eigen::Vector3d point = vertices.col(i) + parameters(0)*lato;
-            result.push_back(point);
-        }
-    }
-    return result;
-}
-
-
 void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
     //stiamo lavorando su una frattura, passiamo in input un'altra frattura per verificare
     //che ci sia intersezione e tramite referenza scrivo sulla mesh delle tracce
@@ -104,8 +63,8 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
     Eigen::Vector3d b(plane_d, other.plane_d, 0);
     Eigen::Vector3d p = A.lu().solve(b); //gestire errore fattorizzazione
 
-    vector<Eigen::Vector3d> punti_1 = calculateIntersectionsPoints(t, p);
-    vector<Eigen::Vector3d> punti_2 = other.calculateIntersectionsPoints(t, p);
+    vector<Eigen::Vector3d> punti_1 = Algorithms::calculateIntersectionsPoints(*this, t, p);
+    vector<Eigen::Vector3d> punti_2 = Algorithms::calculateIntersectionsPoints(other, t, p);
 
     if (punti_1.size()+punti_2.size()!=4) {
         if (punti_1.size()+punti_2.size()>4) {
@@ -237,7 +196,15 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
     }
 }
 
-PolygonalMesh generatePolygonalMesh() {
-    PolygonalMesh output;
-    return output;
+PolygonalMesh Fracture::generatePolygonalMesh() {
+    PolygonalMesh mesh;
+    // riempie la mesh poligonale con i punti iniziali e crea il primo poligono
+    mesh.FractureId = id;
+    for (unsigned int i = 0; i < num_vertices; i++) {
+        mesh.CoordinateCell0Ds.push_back(vertices.col(i));
+        mesh.IdCell0Ds.push_back(i+1);
+    }
+    mesh.IdCell2Ds.push_back(1);
+    mesh.VerticesCell2Ds.push_back(mesh.IdCell0Ds);
+    return mesh;
 }

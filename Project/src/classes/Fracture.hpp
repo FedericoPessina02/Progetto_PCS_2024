@@ -20,10 +20,9 @@ public:
     double radius;
     Fracture() = default;
     Fracture(unsigned int& _id,unsigned int& _num_vertices, Eigen::MatrixXd& _vertices);
-    void generateTrace(Fracture& other, TracesMesh& mesh);
     void calculateNormalVector();
     void calculateSphere();
-    vector<Eigen::Vector3d> calculateIntersectionsPoints(Eigen::Vector3d line, Eigen::Vector3d point);
+    void generateTrace(Fracture& other, TracesMesh& mesh);
     PolygonalMesh generatePolygonalMesh();
 };
 
