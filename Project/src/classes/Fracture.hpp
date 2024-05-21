@@ -23,6 +23,6 @@ public:
     void calculateNormalVector();
     void calculateSphere();
     void generateTrace(Fracture& other, TracesMesh& mesh);
-    PolygonalMesh generatePolygonalMesh();
+    PolygonalMesh generatePolygonalMesh(TracesMesh& traces);
 };
 

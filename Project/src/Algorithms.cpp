@@ -2,6 +2,7 @@
 #include <iostream>
 #include "Eigen/Eigen"
 #include "vector"
+#include "Utils.hpp"
 
 using namespace std;
 
@@ -102,18 +103,48 @@ void cutTraces(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh) {
     }
 }
 
-vector<PolygonalMesh> cutPolygonalMesh(map<int, vector<Fracture>>& id_to_fractures) {
+vector<PolygonalMesh> cutPolygonalMesh(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& traces_mesh) {
     vector<PolygonalMesh> output;
     for (unsigned int id = 0; id < id_to_fractures.size(); id++) {
         for (Fracture& el: id_to_fractures[id]) {
-            output.push_back(el.generatePolygonalMesh());
+            output.push_back(el.generatePolygonalMesh(traces_mesh));
         }
     }
     return output;
 }
 
-void cutPolygonBySegment(PolygonalMesh& mesh, unsigned int polygonId, array<Eigen::Vector3d,2> segment) {
+void cutPolygonBySegment(Fracture& fracture, PolygonalMesh& mesh, unsigned int polygonId, array<unsigned int,2> segment, array<unsigned int,2> intersection_starters) {
     // taglia il poligono (convesso) in due seguendo il segmento (passante per due suoi lati)
+    vector<unsigned int> polygon_a_vertices;
+    vector<unsigned int> polygon_b_vertices;
+    Eigen::Vector3d cut_line = mesh.CoordinateCell0Ds[segment[1]] - mesh.CoordinateCell0Ds[segment[0]];
+    for (unsigned int& vertex_id: mesh.VerticesCell2Ds[polygonId]) {
+        Eigen::Vector3d link_line = mesh.CoordinateCell0Ds[vertex_id] - mesh.CoordinateCell0Ds[segment[0]];
+        Eigen::Vector3d product_line = cut_line.cross(link_line);
+        double evaluation_coef = fracture.normal.dot(product_line) + fracture.plane_d;
+        if (evaluation_coef > 0) {
+            polygon_a_vertices.push_back(vertex_id);
+        } else if(evaluation_coef < 0) {
+            polygon_b_vertices.push_back(vertex_id);
+        } else {
+            cerr << "Cut segment is parallel to an edge of the polygon";
+            return;
+        }
+        if (vertex_id == intersection_starters[0]) {
+            polygon_a_vertices.push_back(segment[0]);
+            polygon_b_vertices.push_back(segment[0]);
+        }
+        if (vertex_id == intersection_starters[1]) {
+            polygon_a_vertices.push_back(segment[1]);
+            polygon_b_vertices.push_back(segment[1]);
+        }
+    }
+    // aggiorno il primo poligono assegnandogli come punti uno dei due poligoni originati dal taglio
+    mesh.VerticesCell2Ds[polygonId] = polygon_a_vertices;
+
+    // creo un nuovo poligono assegnandogli gli estremi dell'altro poligono risultante
+    mesh.IdCell2Ds.push_back(mesh.IdCell2Ds.size());
+    mesh.VerticesCell2Ds.push_back(polygon_b_vertices);
 }
 
 }

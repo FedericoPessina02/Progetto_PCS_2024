@@ -196,15 +196,51 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
     }
 }
 
-PolygonalMesh Fracture::generatePolygonalMesh() {
+PolygonalMesh Fracture::generatePolygonalMesh(TracesMesh& traces) {
     PolygonalMesh mesh;
-    // riempie la mesh poligonale con i punti iniziali e crea il primo poligono
+    // riempie la mesh poligonale con i punti e i lati iniziali e crea il primo poligono
     mesh.FractureId = id;
     for (unsigned int i = 0; i < num_vertices; i++) {
         mesh.CoordinateCell0Ds.push_back(vertices.col(i));
-        mesh.IdCell0Ds.push_back(i+1);
+        mesh.IdCell0Ds.push_back(i);
+        if (i<num_vertices-1) {
+            mesh.IdCell1Ds.push_back(mesh.IdCell1Ds.size());
+            mesh.VerticesCell1Ds.push_back(array<unsigned int,2> {i, i+1});
+        } else {
+            mesh.IdCell1Ds.push_back(mesh.IdCell1Ds.size());
+            mesh.VerticesCell1Ds.push_back(array<unsigned int,2> {i, 0});
+        }
     }
-    mesh.IdCell2Ds.push_back(1);
+    mesh.IdCell2Ds.push_back(0);
     mesh.VerticesCell2Ds.push_back(mesh.IdCell0Ds);
+    mesh.EdgesCell2Ds.push_back(mesh.IdCell1Ds);
+
+    // for(unsigned int& passant_trace_id: passant_traces) {
+    //     array<Eigen::Vector3d, 2> segment_extremes = traces.traces_vertices[passant_trace_id];
+    //     array<unsigned int, 2> segment_ids = {mesh.IdCell0Ds.back() + 1, mesh.IdCell0Ds.back() + 2};
+    //     array<unsigned int, 2> segment_starters;
+    //     mesh.CoordinateCell0Ds.push_back(segment_extremes[0]);
+    //     mesh.IdCell0Ds.push_back(segment_ids[0]);
+    //     mesh.CoordinateCell0Ds.push_back(segment_extremes[1]);
+    //     mesh.IdCell0Ds.push_back(segment_ids[1]);
+    //     for (unsigned int a = 0; a<num_vertices; a++){
+    //         unsigned int b;
+    //         if (a<num_vertices-1) {
+    //             b = a+1;
+    //         } else {
+    //             b = 0;
+    //         }
+    //         Eigen::Vector3d& vert_a = mesh.CoordinateCell0Ds[a];
+    //         Eigen::Vector3d& vert_b = mesh.CoordinateCell0Ds[b];
+    //         if (abs((mesh.CoordinateCell0Ds[segment_ids[0]]-vert_a).norm()+(vert_b-mesh.CoordinateCell0Ds[segment_ids[0]]).norm()-(vert_b-vert_a).norm()) < numeric_limits<double>::epsilon()) {
+    //                 segment_starters[0] = a;
+    //         }
+    //         if (abs((mesh.CoordinateCell0Ds[segment_ids[1]]-vert_a).norm()+(vert_b-mesh.CoordinateCell0Ds[segment_ids[1]]).norm()-(vert_b-vert_a).norm()) < numeric_limits<double>::epsilon()) {
+    //                 segment_starters[1] = a;
+    //         }
+    //     }
+    //     Algorithms::cutPolygonBySegment(*this, mesh, 0, segment_ids, segment_starters);
+    // }
+
     return mesh;
 }

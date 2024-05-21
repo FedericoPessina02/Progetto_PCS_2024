@@ -12,8 +12,7 @@ int main()
     vector<Fracture> fractures = Utils::fractureInput("./DFN/FR3_data.txt", domain_borders); //elenco fratture
     map<int, vector<Fracture>> id_to_fractures = Algorithms::assignPartition(fractures, domain_borders, partition_dimension);
     TracesMesh mesh;
-    cout << id_to_fractures.size();
     Algorithms::cutTraces(id_to_fractures, mesh);
-    vector<PolygonalMesh> polygons = Algorithms::cutPolygonalMesh(id_to_fractures);
+    vector<PolygonalMesh> polygons = Algorithms::cutPolygonalMesh(id_to_fractures, mesh);
     return 0;
 }

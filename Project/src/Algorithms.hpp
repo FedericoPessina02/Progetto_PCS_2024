@@ -19,8 +19,10 @@ void cutTracesOverlapping(vector<Fracture>& overlapping, vector<Fracture>& other
 
 void cutTraces(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh);
 
-vector<PolygonalMesh> cutPolygonalMesh(map<int, vector<Fracture>>& id_to_fractures);
+vector<PolygonalMesh> cutPolygonalMesh(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& traces_mesh);
 
-void cutPolygonBySegment(PolygonalMesh& mesh, unsigned int polygonId, array<Eigen::Vector3d,2> segment);
+void cutPolygonBySegment(Fracture& fracture, PolygonalMesh& mesh, unsigned int polygonId, array<unsigned int,2> segment, array<unsigned int,2> intersections);
+
+void recalculateEdges(PolygonalMesh& mesh, PolygonalMesh& mesh, unsigned int polygonId1, unsigned int polygonId2);
 
 }
