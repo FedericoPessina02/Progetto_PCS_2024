@@ -61,7 +61,7 @@ map<int, vector<Fracture>> assignPartition(vector<Fracture>& fractures, array<do
                 break;
             }
         }
-        id_to_fractures[0].push_back(el);
+        id_to_fractures[el.partition_id].push_back(el);
     }
     fractures.clear();
     return id_to_fractures;
@@ -139,12 +139,28 @@ void cutPolygonBySegment(Fracture& fracture, PolygonalMesh& mesh, unsigned int p
             polygon_b_vertices.push_back(segment[1]);
         }
     }
-    // aggiorno il primo poligono assegnandogli come punti uno dei due poligoni originati dal taglio
-    mesh.VerticesCell2Ds[polygonId] = polygon_a_vertices;
 
     // creo un nuovo poligono assegnandogli gli estremi dell'altro poligono risultante
-    mesh.IdCell2Ds.push_back(mesh.IdCell2Ds.size());
+    unsigned int id_1 = mesh.IdCell2Ds.size();
+    mesh.IdCell2Ds.push_back(id_1);
+    mesh.VerticesCell2Ds.push_back(polygon_a_vertices);
+
+    unsigned int id_2 = mesh.IdCell2Ds.size();
+    mesh.IdCell2Ds.push_back(id_2);
     mesh.VerticesCell2Ds.push_back(polygon_b_vertices);
+
+    mesh.activatedPolygons.erase(remove(mesh.activatedPolygons.begin(), mesh.activatedPolygons.end(), polygonId), mesh.activatedPolygons.end());
+    mesh.activatedPolygons.push_back(id_1);
+    mesh.activatedPolygons.push_back(id_2);
+
+    polygon_a_vertices.push_back(polygon_a_vertices[0]);
+    for (unsigned int i = 0; i < polygon_a_vertices.size() - 1; i++) {
+        mesh.addEdge(polygon_a_vertices[i], polygon_a_vertices[i+1]);
+    }
+    polygon_b_vertices.push_back(polygon_b_vertices[0]);
+    for (unsigned int i = 0; i < polygon_b_vertices.size() - 1; i++) {
+        mesh.addEdge(polygon_b_vertices[i], polygon_b_vertices[i+1]);
+    }
 }
 
 }

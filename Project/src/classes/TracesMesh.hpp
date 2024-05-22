@@ -5,10 +5,10 @@
 using namespace std;
 
 struct TracesMesh {
-    vector<unsigned int> traces_id;
-    vector<array<Eigen::Vector3d,2>> traces_vertices;
-    vector<array<unsigned int,2>> traces_fracture;
-    vector<double> traces_length;
+    vector<unsigned int> traces_id; // id delle tracce
+    vector<array<Eigen::Vector3d,2>> traces_vertices; // coordinate dei vertici delle tracce
+    vector<array<unsigned int,2>> traces_fracture; // fratture che generano le tracce
+    vector<double> traces_length; // lunghezza delle tracce
     TracesMesh() = default;
     void addTrace(unsigned int& id, array<Eigen::Vector3d,2>& vertices, array<unsigned int,2>& fractures) {
         traces_id.push_back(id);

@@ -14,10 +14,10 @@ public:
     Eigen::MatrixXd vertices;
     vector<unsigned int> internal_traces;
     vector<unsigned int> passant_traces;
-    Eigen::Vector3d normal; //mi salvo la normale del piano contenente il poligono
-    double plane_d;
-    Eigen::Vector3d barycenter;
-    double radius;
+    Eigen::Vector3d normal; // normale del piano
+    double plane_d; // coefficiente dell'equazione del piano
+    Eigen::Vector3d barycenter; // baricentro della frattura
+    double radius; // raggio al quadrato della sfera che contiene la frattura
     Fracture() = default;
     Fracture(unsigned int& _id,unsigned int& _num_vertices, Eigen::MatrixXd& _vertices);
     void calculateNormalVector();
