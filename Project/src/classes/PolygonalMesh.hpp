@@ -13,7 +13,7 @@ struct PolygonalMesh {
     vector<unsigned int> IdCell2Ds; // id poligoni
     vector<vector<unsigned int>> VerticesCell2Ds; // riferimenti agli id dei vertici dei poligoni
     vector<vector<unsigned int>> EdgesCell2Ds;  // riferimenti agli id dei lati dei poligoni
-    vector<unsigned int> activatedPolygons; // vettore di poligono rimossi
+    vector<unsigned int> activatedPolygons; // vettore di poligoni in uso
     PolygonalMesh() = default;
     unsigned int addPoint(Eigen::Vector3d point) {
         for (unsigned int i = 0; i < CoordinateCell0Ds.size(); i++) {
@@ -32,8 +32,8 @@ struct PolygonalMesh {
                 (CoordinateCell0Ds[VerticesCell1Ds[i][1]] - CoordinateCell0Ds[b]).squaredNorm() < 5*numeric_limits<double>::epsilon()) {
                 return i;
             }
-            if ((CoordinateCell0Ds[VerticesCell1Ds[i][1]] - CoordinateCell0Ds[b]).squaredNorm() < 5*numeric_limits<double>::epsilon() &&
-                (CoordinateCell0Ds[VerticesCell1Ds[i][0]] - CoordinateCell0Ds[a]).squaredNorm() < 5*numeric_limits<double>::epsilon()) {
+            if ((CoordinateCell0Ds[VerticesCell1Ds[i][1]] - CoordinateCell0Ds[a]).squaredNorm() < 5*numeric_limits<double>::epsilon() &&
+                (CoordinateCell0Ds[VerticesCell1Ds[i][0]] - CoordinateCell0Ds[b]).squaredNorm() < 5*numeric_limits<double>::epsilon()) {
                 return i;
             }
         }

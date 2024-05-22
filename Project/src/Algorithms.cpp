@@ -154,13 +154,20 @@ void cutPolygonBySegment(Fracture& fracture, PolygonalMesh& mesh, unsigned int p
     mesh.activatedPolygons.push_back(id_2);
 
     polygon_a_vertices.push_back(polygon_a_vertices[0]);
+    vector<unsigned int> polygon_a_edges;
     for (unsigned int i = 0; i < polygon_a_vertices.size() - 1; i++) {
-        mesh.addEdge(polygon_a_vertices[i], polygon_a_vertices[i+1]);
+        unsigned int edge_id = mesh.addEdge(polygon_a_vertices[i], polygon_a_vertices[i+1]);
+        polygon_a_edges.push_back(edge_id);
     }
+    mesh.EdgesCell2Ds.push_back(polygon_a_edges);
+
     polygon_b_vertices.push_back(polygon_b_vertices[0]);
+    vector<unsigned int> polygon_b_edges;
     for (unsigned int i = 0; i < polygon_b_vertices.size() - 1; i++) {
-        mesh.addEdge(polygon_b_vertices[i], polygon_b_vertices[i+1]);
+        unsigned int edge_id = mesh.addEdge(polygon_b_vertices[i], polygon_b_vertices[i+1]);
+        polygon_b_edges.push_back(edge_id);
     }
+    mesh.EdgesCell2Ds.push_back(polygon_b_edges);
 }
 
 }
