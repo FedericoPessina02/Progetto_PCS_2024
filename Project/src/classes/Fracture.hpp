@@ -14,16 +14,16 @@ public:
     Eigen::MatrixXd vertices; //matrice contenente le coordinate dei vertici della frattura: colonne= vertici ; righe= x,y,z
     vector<unsigned int> internal_traces;
     vector<unsigned int> passant_traces;
-    Eigen::Vector3d normal; //normale del piano contenente la frattura
-    double plane_d;
-    Eigen::Vector3d barycenter; //centroide della frattura
+    Eigen::Vector3d normal; // normale del piano
+    double plane_d; // coefficiente dell'equazione del piano
+    Eigen::Vector3d barycenter; // //centroide della frattura
     double radius; //raggio della sfera contenente la frattura (NB! è al quadrato per evitare gli alti costi computazionali delle radici)
     Fracture() = default;
     Fracture(unsigned int& _id,unsigned int& _num_vertices, Eigen::MatrixXd& _vertices);
-    void generateTrace(Fracture& other, TracesMesh& mesh);
     void calculateNormalVector();
     void calculateSphere();
-    vector<Eigen::Vector3d> calculateIntersectionsPoints(Eigen::Vector3d line, Eigen::Vector3d point);
-    PolygonalMesh generatePolygonalMesh();
+    void generateTrace(Fracture& other, TracesMesh& mesh);
+    void cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d direction, Eigen::Vector3d application_point);
+    PolygonalMesh generatePolygonalMesh(TracesMesh& traces);
 };
 
