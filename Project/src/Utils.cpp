@@ -12,7 +12,7 @@ using namespace std;
 namespace Utils{
 
 vector<Eigen::Vector3d> calculateDistinctPoints(vector<Eigen::Vector3d>& a, vector<Eigen::Vector3d>& b) {
-    // la funzione assume che  a e b siano due coppie di punti distinti tra di loro
+    // la funzione verifica che a e b siano due coppie di punti distinti
     vector<Eigen::Vector3d> result;
     result.push_back(a[0]);
     for (const Eigen::Vector3d& b_el : b) {
@@ -129,5 +129,34 @@ vector<Fracture> fractureInput(const string& filename, array<double, 6>& domain_
     infile.close();
     return output;
 }
+
+
+void Stampa1(string nome_file,TracesMesh& mesh){
+    ofstream ofs(nome_file);
+    if (! ofs.is_open()){
+        cerr<< "errore di apertura del file di output \n";
+    }
+
+
+    ofs<<"# Number of Traces"<<'\n';
+    ofs<<mesh.traces_id.size()<<'\n';
+    ofs<<"# TraceId; FractureId1; FractureId2; X1; Y1; Z1; X2; Y2; Z2"<<'\n';
+    for (unsigned int i=0; i<mesh.traces_id.size(); ++i){
+        ofs<<mesh.traces_id[i]<<" ; ";
+        ofs<< mesh.traces_fracture[i][0]<<" ; ";
+        ofs<< mesh.traces_fracture[i][1]<<" ; ";
+        ofs<< mesh.traces_vertices[i][0][0]<<" ; ";
+        ofs<< mesh.traces_vertices[i][0][1]<<" ; ";
+        ofs<< mesh.traces_vertices[i][0][2]<<" ; ";
+        ofs<< mesh.traces_vertices[i][1][0]<<" ; ";
+        ofs<< mesh.traces_vertices[i][1][1]<<" ; ";
+        ofs<< mesh.traces_vertices[i][1][2]<<'\n';
+
+    }
+    ofs.close();
+}
+
+
+
 
 }

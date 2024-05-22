@@ -23,4 +23,6 @@ vector<PolygonalMesh> cutPolygonalMesh(map<int, vector<Fracture>>& id_to_fractur
 
 void cutPolygonBySegment(Fracture& fracture, PolygonalMesh& mesh, unsigned int polygonId, array<unsigned int,2> segment, array<unsigned int,2> intersections);
 
+void ordinaFract(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh, string nome_file);
+
 }

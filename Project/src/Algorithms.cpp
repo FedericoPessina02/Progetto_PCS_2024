@@ -1,5 +1,6 @@
 #include "Fracture.hpp"
 #include <iostream>
+#include <fstream>
 #include "Eigen/Eigen"
 #include "vector"
 #include "Utils.hpp"
@@ -8,18 +9,24 @@ using namespace std;
 
 namespace Algorithms {
 
-vector<Eigen::Vector3d> calculateIntersectionsPoints(Fracture& fracture, Eigen::Vector3d line, Eigen::Vector3d point) {
-    vector<Eigen::Vector3d> result;
+vector<Eigen::Vector3d> calculateIntersectionsPoints(Fracture& fracture, Eigen::Vector3d line, Eigen::Vector3d point) { 
+  //calcolo del punto di intersezione tra i lati della frattura e la retta di direzione 'line' e application point 'point' passati in input
+  vector<Eigen::Vector3d> result;
     for (unsigned int i = 0; i < fracture.num_vertices; i++) {
         Eigen::Vector3d lato;
+        //calcolo componenti dei lati della frattura, mediante differenza tra le coordinate di due vertici successivi
+        //(NB! nel caso dell' ultimo vertice, useremo la differenza tra il primo e l'ultimo)
         if (i == fracture.num_vertices-1) {
             lato = fracture.vertices.col(0) - fracture.vertices.col(i);
         } else {
             lato = fracture.vertices.col(i+1) - fracture.vertices.col(i);
         }
+        //verifica che il lato non sia parallelo alla traccia (in caso contrario, non c'è intersezione)
         if (lato.cross(line).norm() < 5*numeric_limits<double>::epsilon()) {
-            continue; // il lato è parallelo alla traccia non ha senso cercare un'intersezione
+            continue;
         }
+        //risoluzione del sistema lineare mediante la fattorizzazione QR (utile per matrici generiche mxn, avente il minor costo
+        //computazionale ovvero (2n^3)/3  )
         Eigen::MatrixXd A;
         A.resize(3,2);
         A.col(0) = lato;
@@ -35,23 +42,26 @@ vector<Eigen::Vector3d> calculateIntersectionsPoints(Fracture& fracture, Eigen::
 }
 
 map<int, vector<Fracture>> assignPartition(vector<Fracture>& fractures, array<double, 6>& domain_borders, const int partitions_number) {
+    //assegna ogni frattura ad una partizione dello spazio totale. Nel caso una frattura abbia vertici in più partizioni, viene assegnato il valore 0
+
     map<int, vector<Fracture>> id_to_fractures;
-    // domain_borders = {x_min, x_max, y_min, y_max, z_min, z_max}
-    // partitions_number è il numero di partizioni per dimensione (2-->8 partizioni, 3-->27 partizioni, ecc ecc)
-    array<double, 3> chunk_size = {
+    /* domain_borders = {x_min, x_max, y_min, y_max, z_min, z_max}
+       partitions_number è il numero di partizioni per dimensione (2-->8 partizioni, 3-->27 partizioni, ecc ecc)*/
+    array<double, 3> chunk_size = {//calcola per x,y,z la dimensione del lato delle partizioni
         abs(domain_borders[1] - domain_borders[0]) / partitions_number,
         abs(domain_borders[3] - domain_borders[2]) / partitions_number,
         abs(domain_borders[5] - domain_borders[4]) / partitions_number
     };
 
-    for(Fracture& el: fractures) {
+    for(Fracture& el: fractures) {//dice in quale partizione dello spazio appartiene ciascuna frattura
         int x_partition_0 = floor(abs(el.vertices(0, 0) - domain_borders[0]) / chunk_size[0]);
         int y_partition_0 = floor(abs(el.vertices(1, 0) - domain_borders[2]) / chunk_size[1]);
         int z_partition_0 = floor(abs(el.vertices(2, 0) - domain_borders[4]) / chunk_size[2]);
         // converte l'id della partizione da base n=partitions_number a base 10 (id sequenziali) e aggiunge 1 (0 riservato alle fratture che sforano)
         int partition_id_vertex_0 = 1 + x_partition_0 + y_partition_0*partitions_number + z_partition_0*partitions_number*partitions_number;
         el.partition_id = partition_id_vertex_0;
-        for(unsigned int i = 1; i < el.num_vertices; i++) {
+        for(unsigned int i = 1; i < el.num_vertices; i++) {//verifica che tutti i vertici della frattura siano nella stessa partizione
+            //altrimenti viene assegnato il valore 0
             int x_partition = floor(abs(el.vertices(0, i) - domain_borders[0]) / chunk_size[0]);
             int y_partition = floor(abs(el.vertices(1, i) - domain_borders[2]) / chunk_size[1]);
             int z_partition = floor(abs(el.vertices(2, i) - domain_borders[4]) / chunk_size[2]);
@@ -170,4 +180,58 @@ void cutPolygonBySegment(Fracture& fracture, PolygonalMesh& mesh, unsigned int p
     mesh.EdgesCell2Ds.push_back(polygon_b_edges);
 }
 
+void ordinaFract(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh, string nome_file){
+    ofstream ofs(nome_file);
+    if (! ofs.is_open()){
+        cerr<< "errore di apertura del file di output \n";
+    }
+
+    // Funzione che compara, utilizzata per ordinare in ordine decrescente
+    auto compareByValueDescending = [](const pair<int, double>& a, const pair<int, double>& b) {
+        return a.second > b.second;
+    };
+
+    for (Fracture& fract : id_to_fractures[0]){
+        ofs<<"# FractureId; NumTraces"<<'\n';
+        ofs<<fract.id<<" ; ";
+        ofs<<fract.internal_traces.size()+fract.passant_traces.size()<<'\n';
+        ofs<<"# TraceId; Tips; Length"<<'\n';
+
+        map<int,double> lunghezze_passanti; //mappa con chiave=id_traccia, valore=lunghezza_traccia
+        map<int,double> lunghezze_interne;
+
+        for (unsigned int& elem :fract.internal_traces){
+            lunghezze_interne[elem]=mesh.traces_length[elem];
+        }
+
+        for (unsigned int& elem :fract.passant_traces){//Id di ogni traccia passante
+            lunghezze_passanti[elem]=mesh.traces_length[elem];
+        }
+
+        //crea un vettore di coppie (vec) contenente tutte le coppie chiave-valore presenti nella mappa lunghezze_passanti.
+        vector<pair<int, double>> vec(lunghezze_passanti.begin(), lunghezze_passanti.end());
+        //crea un vettore di coppie (vect) contenente tutte le coppie chiave-valore presenti nella mappa lunghezze_interne.
+        vector<pair<int, double>> vect(lunghezze_interne.begin(), lunghezze_interne.end());
+
+        // Ordinamento del vettore di coppie in base ai valori
+        sort(vec.begin(), vec.end(), compareByValueDescending);
+        sort(vect.begin(), vect.end(), compareByValueDescending);
+
+        for (const auto& pair : vect) {
+            ofs<< pair.first <<" ; ";
+            ofs<<"true"<<" ; ";
+            ofs<< pair.second<<'\n';
+        }
+        for (const auto& pair : vec) {
+            ofs<< pair.first <<" ; ";
+            ofs<<"false"<<" ; ";
+            ofs<< pair.second<<'\n';
+        }
+    }
+    ofs.close();
 }
+
+
+}
+
+

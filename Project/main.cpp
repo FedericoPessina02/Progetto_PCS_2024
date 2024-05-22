@@ -13,6 +13,8 @@ int main()
     map<int, vector<Fracture>> id_to_fractures = Algorithms::assignPartition(fractures, domain_borders, partition_dimension);
     TracesMesh mesh;
     Algorithms::cutTraces(id_to_fractures, mesh);
+    Utils::Stampa1("results1.csv",mesh);
+    Algorithms::ordinaFract(id_to_fractures, mesh,"results2.csv");
     vector<PolygonalMesh> polygons = Algorithms::cutPolygonalMesh(id_to_fractures, mesh);
     return 0;
 }
