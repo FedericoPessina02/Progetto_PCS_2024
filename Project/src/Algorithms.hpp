@@ -17,4 +17,6 @@ void cutTracesOverlapping(vector<Fracture>& overlapping, vector<Fracture>& other
 
 void cutTraces(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh, const int dimension);
 
+void ordinaFract(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh, string nome_file);
+
 }
