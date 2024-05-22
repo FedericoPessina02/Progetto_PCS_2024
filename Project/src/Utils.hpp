@@ -14,4 +14,6 @@ vector<Eigen::Vector3d> calculateDistinctPoints(vector<Eigen::Vector3d>& a, vect
 
 bool compareSegments(vector<Eigen::Vector3d>& a, vector<Eigen::Vector3d>& b);
 
+void Stampa1(string nome_file,TracesMesh& mesh);
+
 }
