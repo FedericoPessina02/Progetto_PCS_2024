@@ -26,7 +26,7 @@ vector<Eigen::Vector3d> calculateIntersectionsPoints(Fracture& fracture, Eigen::
         A.col(1) = -1*line;
         Eigen::Vector3d b = point - fracture.vertices.col(i);
         Eigen::Vector2d parameters = A.colPivHouseholderQr().solve(b);
-        if (0<=parameters(0) && parameters(0)<1) {
+        if (-10*numeric_limits<double>::epsilon()<=parameters(0) && parameters(0)<1+10*numeric_limits<double>::epsilon()) {
             Eigen::Vector3d point = fracture.vertices.col(i) + parameters(0)*lato;
             result.push_back(point);
         }

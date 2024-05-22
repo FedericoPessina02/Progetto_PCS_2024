@@ -23,6 +23,7 @@ public:
     void calculateNormalVector();
     void calculateSphere();
     void generateTrace(Fracture& other, TracesMesh& mesh);
+    void cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d direction, Eigen::Vector3d application_point);
     PolygonalMesh generatePolygonalMesh(TracesMesh& traces);
 };
 
