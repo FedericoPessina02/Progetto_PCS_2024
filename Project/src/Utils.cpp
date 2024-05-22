@@ -27,10 +27,10 @@ vector<Eigen::Vector3d> calculateDistinctPoints(vector<Eigen::Vector3d>& a, vect
 }
 
 bool compareSegments(vector<Eigen::Vector3d>& a, vector<Eigen::Vector3d>& b) {
-    if (a[0] == b[0] && a[1] == b[1]) {
+    if ((a[0]-b[0]).squaredNorm() < 100*numeric_limits<double>::epsilon() && (a[1]-b[1]).squaredNorm() < 100*numeric_limits<double>::epsilon()) {
         return true;
     }
-    if (a[0] == b[1] && a[1] == b[0]) {
+    if ((a[0]-b[1]).squaredNorm() < 100*numeric_limits<double>::epsilon() && (a[1]-b[0]).squaredNorm() < 100*numeric_limits<double>::epsilon()) {
         return true;
     }
     return false;

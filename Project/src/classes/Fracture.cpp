@@ -50,62 +50,6 @@ void Fracture::calculateNormalVector(){
     plane_d = normal.dot(vertices.col(0));
 }
 
-vector<Eigen::Vector3d> Fracture::calculateIntersectionsPoints(Eigen::Vector3d line, Eigen::Vector3d point) {
-    //calcolo del punto di intersezione tra i lati della frattura e la retta di direzione 'line' e application point 'point' passati in input
-
-    vector<Eigen::Vector3d> result; //vettore contenente tutti i punti di intersezione tra la retta e i lati
-    for (unsigned int i = 0; i < num_vertices; i++) {
-        Eigen::Vector3d lato;
-
-        //calcolo componenti dei lati della frattura, mediante differenza tra le coordinate di due vertici successivi
-        //(NB! nel caso dell' ultimo vertice, useremo la differenza tra il primo e l'ultimo)
-        if (i == num_vertices-1) {
-            lato = vertices.col(0) - vertices.col(i);
-        } else {
-            lato = vertices.col(i+1) - vertices.col(i);
-        }
-
-        //verifica che il lato non sia parallelo alla traccia (in caso contrario, non c'è intersezione)
-        if (lato.cross(line).norm() < 5*numeric_limits<double>::epsilon()) {
-            continue;
-        }
-
-        //risoluzione del sistema lineare mediante la fattorizzazione QR (utile per matrici generiche mxn, avente il minor costo
-        //computazionale ovvero (2n^3)/3  )
-        Eigen::MatrixXd A;
-        A.resize(3,2);
-        A.col(0) = lato;
-        A.col(1) = -1*line;
-        Eigen::Vector3d b = point - vertices.col(i);
-
-
-        // riduco a due equazioni (significative)
-        // Eigen::Matrix2d Coeffs;
-        // Eigen::Vector2d b_values;
-        // if (abs(A.block(0, 0, 2, 2).determinant()) >= 5*numeric_limits<double>::epsilon()) {
-        //     Coeffs = A.block(0, 0, 2, 2);
-        //     b_values << b(0), b(1);
-        // } else if (abs(A.block(1, 0, 2, 2).determinant()) >= 5*numeric_limits<double>::epsilon()) {
-        //     Coeffs = A.block(1, 0, 2, 2);
-        //     b_values << b(1), b(2);
-        // } else {
-        //     Coeffs << line(0), lato(0), line(2), lato(2); // controllare che funzioni
-        //     b_values << b(0), b(2);
-        // }
-        //Eigen::Vector2d parameters = Coeffs.lu().solve(b_values);
-
-
-        Eigen::Vector2d parameters = A.colPivHouseholderQr().solve(b);
-        //se il parametro alfa è compreso tra 0 e 1, sarà verificata la combinazione convessa e troviamo il punto di intersezione
-        if (0<=parameters(0) && parameters(0)<1) {
-            Eigen::Vector3d point = vertices.col(i) + parameters(0)*lato;
-            result.push_back(point);
-        }
-    }
-    return result;
-}
-
-
 void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
     /*stiamo lavorando su una frattura, passando in input un'altra frattura valutiamo se ci sia intersezione fra di esse e cataloghiamo il tipo di traccia ottenuta.
     Tale processo avviene su più step:
@@ -132,8 +76,8 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
     Eigen::Vector3d p = A.lu().solve(b); //gestire errore fattorizzazione
 
     //calcolo delle intersezioni tra i lati di entrambe le fratture e la retta ottenuta
-    vector<Eigen::Vector3d> punti_1 = calculateIntersectionsPoints(t, p);
-    vector<Eigen::Vector3d> punti_2 = other.calculateIntersectionsPoints(t, p);
+    vector<Eigen::Vector3d> punti_1 = Algorithms::calculateIntersectionsPoints(*this, t, p);
+    vector<Eigen::Vector3d> punti_2 = Algorithms::calculateIntersectionsPoints(other, t, p);
 
     //definiamo il tipo di traccia a seconda del numero di punti intersezione ottenuti
     if (punti_1.size()+punti_2.size()!=4) {
@@ -243,7 +187,13 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
         }
     }
 
-    if (find(punti.begin(), punti.end(), punto_vicini) != punti.end()) {
+    // if (find(punti.begin(), punti.end(), punto_vicini) != punti.end()) {
+    //     return;
+    // }
+    if ((punti[0]-punto_vicini).squaredNorm() < 8*numeric_limits<double>::epsilon()) {
+        return;
+    }
+    if ((punti[1]-punto_vicini).squaredNorm() < 8*numeric_limits<double>::epsilon()) {
         return;
     }
 
@@ -277,9 +227,157 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
     }
 }
 
+PolygonalMesh Fracture::generatePolygonalMesh(TracesMesh& traces) {
+    PolygonalMesh mesh;
+    // riempie la mesh poligonale con i punti e i lati iniziali e crea il primo poligono
+    mesh.FractureId = id;
+    for (unsigned int i = 0; i < num_vertices; i++) {
+        mesh.CoordinateCell0Ds.push_back(vertices.col(i));
+        mesh.IdCell0Ds.push_back(i);
+        if (i<num_vertices-1) {
+            mesh.IdCell1Ds.push_back(mesh.IdCell1Ds.size());
+            mesh.VerticesCell1Ds.push_back(array<unsigned int,2> {i, i+1});
+        } else {
+            mesh.IdCell1Ds.push_back(mesh.IdCell1Ds.size());
+            mesh.VerticesCell1Ds.push_back(array<unsigned int,2> {i, 0});
+        }
+    }
+    mesh.IdCell2Ds.push_back(0);
+    mesh.activatedPolygons.push_back(0);
+    mesh.VerticesCell2Ds.push_back(mesh.IdCell0Ds);
+    mesh.EdgesCell2Ds.push_back(mesh.IdCell1Ds);
 
+    // taglio per tracce passanti
+    for (unsigned int& trace_id: passant_traces) {
+        cutMeshBySegment(mesh, traces.traces_vertices[trace_id][0], traces.traces_vertices[trace_id][1]);
+    }
 
-PolygonalMesh generatePolygonalMesh() {
-    PolygonalMesh output;
-    return output;
+    // taglio per tracce non passanti
+    for (unsigned int& trace_id: internal_traces) {
+        Eigen::Vector3d direction = traces.traces_vertices[trace_id][1] - traces.traces_vertices[trace_id][0];
+        Eigen::Vector3d application_point = traces.traces_vertices[trace_id][0];
+
+        vector<Eigen::Vector3d> standard_intersection_points; // punti di intersezione lungo l'estensione della traccia (li devo considerare sempre)
+        vector<double> combination_coeffs;
+        for (unsigned int& polygonId: mesh.activatedPolygons) {
+            // scorro i lati del poligono per cercare i punti di intersezione
+            for (unsigned int i = 0; i < mesh.VerticesCell2Ds[polygonId].size(); i++) {
+                Eigen::Vector3d a = mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygonId][i]];
+                Eigen::Vector3d b;
+                if (i < mesh.VerticesCell2Ds[polygonId].size() - 1) {
+                    b = mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygonId][i+1]];
+                } else {
+                    b = mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygonId][0]];
+                }
+                Eigen::Vector3d edge_direction = b-a;
+                Eigen::Vector3d edge_application = a;
+                if (edge_direction.cross(direction).norm() < 5*numeric_limits<double>::epsilon()) {
+                    continue; // il lato è parallelo al segmento non ha senso cercare un'intersezione
+                }
+                Eigen::MatrixXd A;
+                A.resize(3,2);
+                A.col(0) = edge_direction;
+                A.col(1) = -1*direction;
+                Eigen::Vector3d coef = application_point - edge_application;
+                Eigen::Vector2d parameters = A.colPivHouseholderQr().solve(coef);
+                Eigen::Vector3d point = a + parameters(0)*edge_direction;
+                if (-5*numeric_limits<double>::epsilon()<=parameters(0) && parameters(0)<1+5*numeric_limits<double>::epsilon()) {
+                    standard_intersection_points.push_back(point);
+                    combination_coeffs.push_back(parameters(1));
+                }
+            }
+        }
+
+        // distingue tre casi --> coefficienti tutti dello stesso segno o misti
+        array<Eigen::Vector3d, 2> extended_trace_borders;
+        unsigned int strict_positives = 0;
+        unsigned int strict_negatives = 0;
+        for (double& coeff: combination_coeffs) {
+            if (coeff > 0) {
+                strict_positives ++;
+            } else if (coeff < 0) {
+                strict_negatives ++;
+            }
+        }
+
+        if (strict_positives != 0 && strict_negatives != 0) {
+            double negative_coeff = numeric_limits<double>::lowest();
+            double positive_coeff = numeric_limits<double>::max();
+            for (unsigned int i = 0; i<standard_intersection_points.size(); i++) {
+                if (combination_coeffs[i] <= 0) {
+                    if (combination_coeffs[i] > negative_coeff) {
+                        extended_trace_borders[0] = standard_intersection_points[i];
+                        negative_coeff = combination_coeffs[i];
+                    }
+                } else if (combination_coeffs[i] >= 1) {
+                    if (combination_coeffs[i] < positive_coeff) {
+                        extended_trace_borders[1] = standard_intersection_points[i];
+                        positive_coeff = combination_coeffs[i];
+                    }
+                }
+            }
+        } else {
+            double min_coeff = numeric_limits<double>::max();
+            for (unsigned int i = 0; i<standard_intersection_points.size(); i++) {
+                if (combination_coeffs[i] == 0) {
+                    extended_trace_borders[0] = standard_intersection_points[i];
+                } else if (abs(combination_coeffs[i]) < min_coeff) {
+                    extended_trace_borders[1] = standard_intersection_points[i];
+                    min_coeff = abs(combination_coeffs[i]);
+                }
+            }
+        }
+
+        // lancio il taglio della mesh usando come estremi l'estesa della traccia
+        cutMeshBySegment(mesh, extended_trace_borders[0], extended_trace_borders[1]);
+    }
+
+    return mesh;
+}
+
+void Fracture::cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d a, Eigen::Vector3d b) {
+    Eigen::Vector3d direction = b-a;
+    Eigen::Vector3d application_point = a;
+    vector<unsigned int> to_be_modified_polygons = mesh.activatedPolygons;
+    for (unsigned int& polygonId: to_be_modified_polygons) {
+        vector<Eigen::Vector3d> intersection_points;
+        vector<unsigned int> intersection_starters;
+        // scorro i lati del poligono per cercare i punti di intersezione
+        for (unsigned int i = 0; i < mesh.VerticesCell2Ds[polygonId].size(); i++) {
+            Eigen::Vector3d a = mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygonId][i]];
+            Eigen::Vector3d b;
+            if (i < mesh.VerticesCell2Ds[polygonId].size() - 1) {
+                b = mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygonId][i+1]];
+            } else {
+                b = mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygonId][0]];
+            }
+            Eigen::Vector3d edge_direction = b-a;
+            Eigen::Vector3d edge_application = a;
+            if (edge_direction.cross(direction).norm() < 5*numeric_limits<double>::epsilon()) {
+                continue; // il lato è parallelo al segmento non ha senso cercare un'intersezione
+            }
+            Eigen::MatrixXd A;
+            A.resize(3,2);
+            A.col(0) = edge_direction;
+            A.col(1) = -1*direction;
+            Eigen::Vector3d coef = application_point - edge_application;
+            Eigen::Vector2d parameters = A.colPivHouseholderQr().solve(coef);
+            if (-5*numeric_limits<double>::epsilon()<=parameters(0) && parameters(0)<1+5*numeric_limits<double>::epsilon()) {
+                if (-5*numeric_limits<double>::epsilon()<=parameters(1) && parameters(1)<1+5*numeric_limits<double>::epsilon()) {
+                    Eigen::Vector3d point = a + parameters(0)*edge_direction;
+                    intersection_points.push_back(point);
+                    intersection_starters.push_back(mesh.VerticesCell2Ds[polygonId][i]);
+                }
+            }
+        }
+        if (intersection_points.size() != 2) {
+            continue;
+        }
+        array<unsigned int, 2> segment;
+        segment[0] = mesh.addPoint(intersection_points[0]);
+        segment[1] = mesh.addPoint(intersection_points[1]);
+        array<unsigned int, 2> line_starters = {intersection_starters[0], intersection_starters[1]};
+        Algorithms::cutPolygonBySegment(*this, mesh, polygonId, segment, line_starters);
+    }
+
 }
