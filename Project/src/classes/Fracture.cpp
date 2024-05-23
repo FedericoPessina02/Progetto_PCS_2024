@@ -86,10 +86,6 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
             cerr << "More than 4 points of intersections";
             return;
         }
-        if (punti_1.size() == 1 || punti_2.size() == 1) {
-            cerr << "1 punto di intersezione" << endl;
-            return;
-        }
         return;
     }
 
@@ -167,6 +163,7 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
         for (unsigned int j = 0; j < punti_2.size(); j++) {
             if ((punti_1[i]-punti_2[j]).squaredNorm() > distanza) {
                 estremo = punti_1[i];
+                distanza = (punti_1[i]-punti_2[j]).squaredNorm();
             }
         }
     }
@@ -187,9 +184,7 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
         }
     }
 
-    // if (find(punti.begin(), punti.end(), punto_vicini) != punti.end()) {
-    //     return;
-    // }
+    // controlla il caso degenere di due fratture separate con segmento di intersezione esterno ad entrambi i poligoni
     if ((punti[0]-punto_vicini).squaredNorm() < 8*numeric_limits<double>::epsilon()) {
         return;
     }
