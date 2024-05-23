@@ -156,7 +156,7 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
         return;
     }
 
-    vector<Eigen::Vector3d>& punti = punti_1;
+    vector<Eigen::Vector3d>* punti_ptr = &punti_1;
     double distanza = 0;
     Eigen::Vector3d estremo;
     for (unsigned int i = 0; i < punti_1.size(); i++) {
@@ -169,7 +169,7 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
     }
     if ((punti_2[0]-punti_2[1]).squaredNorm() > distanza) {
         estremo = punti_2[0];
-        punti = punti_2;
+        punti_ptr = &punti_2;
     }
 
     Eigen::Vector3d punto_vicini;
@@ -185,10 +185,10 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
     }
 
     // controlla il caso degenere di due fratture separate con segmento di intersezione esterno ad entrambi i poligoni
-    if ((punti[0]-punto_vicini).squaredNorm() < 8*numeric_limits<double>::epsilon()) {
+    if ((punti_ptr->operator[](0)-punto_vicini).squaredNorm() < 8*numeric_limits<double>::epsilon()) {
         return;
     }
-    if ((punti[1]-punto_vicini).squaredNorm() < 8*numeric_limits<double>::epsilon()) {
+    if ((punti_ptr->operator[](1)-punto_vicini).squaredNorm() < 8*numeric_limits<double>::epsilon()) {
         return;
     }
 
