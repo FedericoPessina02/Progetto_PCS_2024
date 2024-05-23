@@ -97,8 +97,8 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
         copy_n(make_move_iterator(punti_distinti.begin()), 2, punti_distinti_array.begin());
         array<unsigned int, 2> fractures_id = {id, other.id};
         mesh.addTrace(trace_id, punti_distinti_array, fractures_id);
-        passant_traces.push_back(id); //aggiungo l'id della traccia nel vettore delle tracce passanti (per la frattura su cui si sta lavorando)
-        other.passant_traces.push_back(id); //aggiungo l'id della traccia nel vettore delle tracce passanti (per la frattura passata in input)
+        passant_traces.push_back(trace_id); //aggiungo l'id della traccia nel vettore delle tracce passanti (per la frattura su cui si sta lavorando)
+        other.passant_traces.push_back(trace_id); //aggiungo l'id della traccia nel vettore delle tracce passanti (per la frattura passata in input)
         return;
     }
     if (punti_distinti.size() == 3) {
