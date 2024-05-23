@@ -204,18 +204,18 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
         }
     }
 
-    vector<Eigen::Vector3d> punti_distinti_vector = {punto_vicini, punto_meno_vicini};
-    array<Eigen::Vector3d, 2> punti_distinti_array = {punto_vicini, punto_meno_vicini};
+    vector<Eigen::Vector3d> punti_traccia_vector = {punto_vicini, punto_meno_vicini};
+    array<Eigen::Vector3d, 2> punti_traccia_array = {punto_vicini, punto_meno_vicini};
     array<unsigned int, 2> fractures_id = {id, other.id};
-    mesh.addTrace(trace_id, punti_distinti_array, fractures_id);
+    mesh.addTrace(trace_id, punti_traccia_array, fractures_id);
 
-    if (Utils::compareSegments(punti_distinti_vector, punti_1)) {
+    if (Utils::compareSegments(punti_traccia_vector, punti_1)) {
         passant_traces.push_back(trace_id);
     } else {
         internal_traces.push_back(trace_id);
     }
 
-    if (Utils::compareSegments(punti_distinti_vector, punti_2)) {
+    if (Utils::compareSegments(punti_traccia_vector, punti_2)) {
         other.passant_traces.push_back(trace_id);
     } else {
         other.internal_traces.push_back(trace_id);
