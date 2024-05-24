@@ -15,22 +15,28 @@ vector<Eigen::Vector3d> calculateDistinctPoints(vector<Eigen::Vector3d>& a, vect
     // la funzione verifica che a e b siano due coppie di punti distinti
     vector<Eigen::Vector3d> result;
     result.push_back(a[0]);
+    result.push_back(a[1]);
     for (const Eigen::Vector3d& b_el : b) {
-        if ((a[0]-b_el).norm() >= 8*numeric_limits<double>::epsilon()) {
-            result.push_back(b_el);
+            if ((a[0]-b_el).norm() >= 8*numeric_limits<double>::epsilon() && (a[1]-b_el).norm() >= 8*numeric_limits<double>::epsilon()) {
+                result.push_back(b_el);
+            }
         }
-    }
-    if ((a[1]-b[0]).norm() >= 8*numeric_limits<double>::epsilon() && (a[1]-b[1]).norm() >= 8*numeric_limits<double>::epsilon()) {
-        result.push_back(a[1]);
-    }
+    // for (const Eigen::Vector3d& b_el : b) {
+    //     if ((a[0]-b_el).norm() >= 8*numeric_limits<double>::epsilon()) {
+    //         result.push_back(b_el);
+    //     }
+    // }
+    // if ((a[1]-b[0]).norm() >= 8*numeric_limits<double>::epsilon() && (a[1]-b[1]).norm() >= 8*numeric_limits<double>::epsilon()) {
+    //     result.push_back(a[1]);
+    // }
     return result;
 }
 
 bool compareSegments(vector<Eigen::Vector3d>& a, vector<Eigen::Vector3d>& b) {
-    if ((a[0]-b[0]).squaredNorm() < 100*numeric_limits<double>::epsilon() && (a[1]-b[1]).squaredNorm() < 100*numeric_limits<double>::epsilon()) {
+    if ((a[0]-b[0]).squaredNorm() < 10*numeric_limits<double>::epsilon() && (a[1]-b[1]).squaredNorm() < 10*numeric_limits<double>::epsilon()) {
         return true;
     }
-    if ((a[0]-b[1]).squaredNorm() < 100*numeric_limits<double>::epsilon() && (a[1]-b[0]).squaredNorm() < 100*numeric_limits<double>::epsilon()) {
+    if ((a[0]-b[1]).squaredNorm() < 10*numeric_limits<double>::epsilon() && (a[1]-b[0]).squaredNorm() < 10*numeric_limits<double>::epsilon()) {
         return true;
     }
     return false;
