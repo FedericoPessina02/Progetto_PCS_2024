@@ -190,42 +190,45 @@ void ordinaFract(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh, 
     auto compareByValueDescending = [](const pair<int, double>& a, const pair<int, double>& b) {
         return a.second > b.second;
     };
+    for (unsigned int partition_id = 0; partition_id < id_to_fractures.size(); partition_id++) {
+        if (id_to_fractures[partition_id].size() != 0) {
+            for (Fracture& fract : id_to_fractures[partition_id]){
+                ofs<<"# FractureId; NumTraces"<<'\n';
+                ofs<<fract.id<<" ; ";
+                ofs<<fract.internal_traces.size()+fract.passant_traces.size()<<'\n';
+                ofs<<"# TraceId; Tips; Length"<<'\n';
 
-    for (Fracture& fract : id_to_fractures[0]){
-        ofs<<"# FractureId; NumTraces"<<'\n';
-        ofs<<fract.id<<" ; ";
-        ofs<<fract.internal_traces.size()+fract.passant_traces.size()<<'\n';
-        ofs<<"# TraceId; Tips; Length"<<'\n';
+                map<int,double> lunghezze_passanti; //mappa con chiave=id_traccia, valore=lunghezza_traccia
+                map<int,double> lunghezze_interne;
 
-        map<int,double> lunghezze_passanti; //mappa con chiave=id_traccia, valore=lunghezza_traccia
-        map<int,double> lunghezze_interne;
+                for (unsigned int& elem :fract.internal_traces){
+                    lunghezze_interne[elem]=mesh.traces_length[elem];
+                }
 
-        for (unsigned int& elem :fract.internal_traces){
-            lunghezze_interne[elem]=mesh.traces_length[elem];
-        }
+                for (unsigned int& elem :fract.passant_traces){//Id di ogni traccia passante
+                    lunghezze_passanti[elem]=mesh.traces_length[elem];
+                }
 
-        for (unsigned int& elem :fract.passant_traces){//Id di ogni traccia passante
-            lunghezze_passanti[elem]=mesh.traces_length[elem];
-        }
+                //crea un vettore di coppie (vec) contenente tutte le coppie chiave-valore presenti nella mappa lunghezze_passanti.
+                vector<pair<int, double>> vec(lunghezze_passanti.begin(), lunghezze_passanti.end());
+                //crea un vettore di coppie (vect) contenente tutte le coppie chiave-valore presenti nella mappa lunghezze_interne.
+                vector<pair<int, double>> vect(lunghezze_interne.begin(), lunghezze_interne.end());
 
-        //crea un vettore di coppie (vec) contenente tutte le coppie chiave-valore presenti nella mappa lunghezze_passanti.
-        vector<pair<int, double>> vec(lunghezze_passanti.begin(), lunghezze_passanti.end());
-        //crea un vettore di coppie (vect) contenente tutte le coppie chiave-valore presenti nella mappa lunghezze_interne.
-        vector<pair<int, double>> vect(lunghezze_interne.begin(), lunghezze_interne.end());
+                // Ordinamento del vettore di coppie in base ai valori
+                sort(vec.begin(), vec.end(), compareByValueDescending);
+                sort(vect.begin(), vect.end(), compareByValueDescending);
 
-        // Ordinamento del vettore di coppie in base ai valori
-        sort(vec.begin(), vec.end(), compareByValueDescending);
-        sort(vect.begin(), vect.end(), compareByValueDescending);
-
-        for (const auto& pair : vect) {
-            ofs<< pair.first <<" ; ";
-            ofs<<"true"<<" ; ";
-            ofs<< pair.second<<'\n';
-        }
-        for (const auto& pair : vec) {
-            ofs<< pair.first <<" ; ";
-            ofs<<"false"<<" ; ";
-            ofs<< pair.second<<'\n';
+                for (const auto& pair : vect) {
+                    ofs<< pair.first <<" ; ";
+                    ofs<<"true"<<" ; ";
+                    ofs<< pair.second<<'\n';
+                }
+                for (const auto& pair : vec) {
+                    ofs<< pair.first <<" ; ";
+                    ofs<<"false"<<" ; ";
+                    ofs<< pair.second<<'\n';
+                }
+            }
         }
     }
     ofs.close();
