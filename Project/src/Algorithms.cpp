@@ -149,7 +149,6 @@ void cutPolygonBySegment(Fracture& fracture, PolygonalMesh& mesh, unsigned int p
             polygon_b_vertices.push_back(segment[1]);
         }
     }
-
     // creo un nuovo poligono assegnandogli gli estremi dell'altro poligono risultante
     unsigned int id_1 = mesh.IdCell2Ds.size();
     mesh.IdCell2Ds.push_back(id_1);
@@ -205,7 +204,7 @@ void ordinaFract(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh, 
                     lunghezze_interne[elem]=mesh.traces_length[elem];
                 }
 
-                for (unsigned int& elem :fract.passant_traces){//Id di ogni traccia passante
+                for (unsigned int& elem :fract.passant_traces){ //Id di ogni traccia passante
                     lunghezze_passanti[elem]=mesh.traces_length[elem];
                 }
 
@@ -215,6 +214,7 @@ void ordinaFract(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh, 
                 vector<pair<int, double>> vect(lunghezze_interne.begin(), lunghezze_interne.end());
 
                 // Ordinamento del vettore di coppie in base ai valori
+                /* usare bubblesort o mergesort */
                 sort(vec.begin(), vec.end(), compareByValueDescending);
                 sort(vect.begin(), vect.end(), compareByValueDescending);
 

@@ -161,8 +161,5 @@ void Stampa1(string nome_file,TracesMesh& mesh){
     }
     ofs.close();
 }
-
-
-
-
 }
+

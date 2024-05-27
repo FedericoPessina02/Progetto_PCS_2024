@@ -330,10 +330,10 @@ PolygonalMesh Fracture::generatePolygonalMesh(TracesMesh& traces) {
     return mesh;
 }
 
-void Fracture::cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d a, Eigen::Vector3d b) {
+void Fracture::cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d a, Eigen::Vector3d b) { //a e b danno il segmento che tocca i bordi dei poligoni da tagliare
     Eigen::Vector3d direction = b-a;
     Eigen::Vector3d application_point = a;
-    vector<unsigned int> to_be_modified_polygons = mesh.activatedPolygons;
+    vector<unsigned int> to_be_modified_polygons = mesh.activatedPolygons; //id dei poligoni interessati
     for (unsigned int& polygonId: to_be_modified_polygons) {
         vector<Eigen::Vector3d> intersection_points;
         vector<unsigned int> intersection_starters;
@@ -357,7 +357,8 @@ void Fracture::cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d a, Eigen::V
             A.col(1) = -1*direction;
             Eigen::Vector3d coef = application_point - edge_application;
             Eigen::Vector2d parameters = A.colPivHouseholderQr().solve(coef);
-            if (-5*numeric_limits<double>::epsilon()<=parameters(0) && parameters(0)<1+5*numeric_limits<double>::epsilon()) {
+            if (-5*numeric_limits<double>::epsilon()<=parameters(0) && parameters(0)<1-5*numeric_limits<double>::epsilon()) {
+                //si puo togliere l'if sotto (?) No perche non vogliamo tagliare ulteriormente anche poligoni fuori
                 if (-5*numeric_limits<double>::epsilon()<=parameters(1) && parameters(1)<1+5*numeric_limits<double>::epsilon()) {
                     Eigen::Vector3d point = a + parameters(0)*edge_direction;
                     intersection_points.push_back(point);
