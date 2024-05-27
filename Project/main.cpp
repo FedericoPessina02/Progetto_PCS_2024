@@ -30,7 +30,6 @@ int main(int argc, char **argv)
 // /*controllo correttezza traccia e correttezza tracce passanti e interne dati due poligoni*/
 //perfeziona cosa dei poligoni messi in senso antiorario qualunque (basta che rispettino il senso di partenza)
 TEST(zero_caso_interna_passante,norma_della_differenza_tra_punti_intersezione_corretti_e_calcolati) //caso - * * -
-
 {
     unsigned int id1 = 26;
     unsigned int id2 = 9;
@@ -65,9 +64,9 @@ TEST(zero_caso_interna_passante,norma_della_differenza_tra_punti_intersezione_co
     EXPECT_EQ(0,h1.passant_traces.size());
     EXPECT_EQ(1,h2.passant_traces.size());
     EXPECT_EQ(1,h1.internal_traces.size());
-    EXPECT_EQ(0,h2.internal_traces.size());};
-TEST(zero_traccia_inesistente,numero_di_tracce_salvate) //caso - - * *
+    EXPECT_EQ(0,h2.internal_traces.size());}
 
+TEST(zero_traccia_inesistente,numero_di_tracce_salvate) //caso - - * *
 {
     unsigned int id1 = 0;
     unsigned int id2 = 1;
@@ -88,8 +87,8 @@ TEST(zero_traccia_inesistente,numero_di_tracce_salvate) //caso - - * *
     EXPECT_EQ(mesh.traces_id.size(),0); //non ho salvato tracce
     /*Osservazione: se una matrice con dimensione definita non viene riempita mi da come errore "more than 4 points of intersections */
 }
-TEST(zero_caso_interna_interna,norma_della_differenza_tra_punti_intersezione_corretti_e_calcolati) //caso - * - *
 
+TEST(zero_caso_interna_interna,norma_della_differenza_tra_punti_intersezione_corretti_e_calcolati) //caso - * - *
 {
     unsigned int id1 = 110;
     unsigned int id2 = 11;
@@ -126,6 +125,7 @@ TEST(zero_caso_interna_interna,norma_della_differenza_tra_punti_intersezione_cor
     EXPECT_EQ(1,h1.internal_traces.size());
     EXPECT_EQ(1,h2.internal_traces.size());
 }
+
 TEST(poligoni_tagliati_by_hand,poligoni_tagliati_da_cutPolygonalMesh)
 {
     unsigned int id1 = 0;
@@ -193,7 +193,6 @@ TEST(poligoni_tagliati_by_hand,poligoni_tagliati_da_cutPolygonalMesh)
 
 //Il test qua sotto non funziona, mi stampa dei poligoni che hanno piu volte lo stesso vertice -> DA MODIFICARE CUTPOLYGONBYSEGMENT
 TEST(poligoni_tagliati_by_hand_2,poligoni_tagliati_da_cutPolygonalMesh) //la traccia ha come estremi i vertici del poligono
-
 {
     //void cutPolygonBySegment(Fracture& fracture, PolygonalMesh& mesh, unsigned int polygonId, array<unsigned int,2> segment, array<unsigned int,2> intersection_starters) {
     unsigned int id1 = 0;
@@ -247,10 +246,10 @@ TEST(poligoni_tagliati_by_hand_2,poligoni_tagliati_da_cutPolygonalMesh) //la tra
         for (unsigned int i = 0; i < mesh.VerticesCell2Ds[polygon_id].size(); i ++){
             vertici_da_algoritmo.push_back(mesh.VerticesCell2Ds[polygon_id][i]);
             j += 1;
-            cout << j << ":  ";
-            cout << mesh.VerticesCell2Ds[polygon_id][i] << endl;
+            // cout << j << ":  ";
+            // cout << mesh.VerticesCell2Ds[polygon_id][i] << endl;
         }
-        cout << endl;
+        // cout << endl;
     }
     if (vertici_da_algoritmo.size() != vertici_giusti_1.size()){
         ASSERT_EQ(0,1); //numero di vertici totali differente
@@ -299,7 +298,6 @@ TEST(poligoni_corretti_e_ordinati_in_senso_antiorario,poligoni_forniti_da_algori
         }
     }
     mesh.IdCell2Ds.push_back(0);
-    //mesh.activatedPolygons.push_back(id0);          // (?)
     mesh.VerticesCell2Ds.push_back(mesh.IdCell0Ds);
     mesh.EdgesCell2Ds.push_back(mesh.IdCell1Ds);
 
@@ -329,10 +327,6 @@ TEST(poligoni_corretti_e_ordinati_in_senso_antiorario,poligoni_forniti_da_algori
 
     Eigen::Vector3d a={6,2,0};
     Eigen::Vector3d b={0,1,0};
-    mesh.addPoint(a);
-    mesh.addPoint(b);
-    Eigen::Vector3d z = {3,1.5,0};
-    mesh.addPoint(z);
 
     h0.cutMeshBySegment(mesh,a,b);
     cout << mesh.activatedPolygons.size() << endl;
@@ -343,11 +337,9 @@ TEST(poligoni_corretti_e_ordinati_in_senso_antiorario,poligoni_forniti_da_algori
         }
         cout << endl;
     }
-
-    //Implementare test per controllare senso antiorario dei poligoni
 }
 
-//Manca test su generatePolygonalMesh che fa tutto quindi prendi un esempio di poligono con 2 traccie e dentro e controlla tutti i tagli corretti
+//Manca test su generatePolygonalMesh che fa tutto quindi prendi un esempio di poligono con 2 tracce e dentro e controlla tutti i tagli corretti
 
 /* */
 
