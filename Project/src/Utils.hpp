@@ -16,4 +16,6 @@ bool compareSegments(vector<Eigen::Vector3d>& a, vector<Eigen::Vector3d>& b);
 
 void Stampa1(string nome_file,TracesMesh& mesh);
 
+void ExportSTL(string nome_file, vector<PolygonalMesh>& mesh_collection);
+
 }

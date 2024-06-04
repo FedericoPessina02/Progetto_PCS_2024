@@ -21,18 +21,11 @@ vector<Eigen::Vector3d> calculateDistinctPoints(vector<Eigen::Vector3d>& a, vect
                 result.push_back(b_el);
             }
         }
-    // for (const Eigen::Vector3d& b_el : b) {
-    //     if ((a[0]-b_el).norm() >= 8*numeric_limits<double>::epsilon()) {
-    //         result.push_back(b_el);
-    //     }
-    // }
-    // if ((a[1]-b[0]).norm() >= 8*numeric_limits<double>::epsilon() && (a[1]-b[1]).norm() >= 8*numeric_limits<double>::epsilon()) {
-    //     result.push_back(a[1]);
-    // }
     return result;
 }
 
 bool compareSegments(vector<Eigen::Vector3d>& a, vector<Eigen::Vector3d>& b) {
+    // verifico se i due segmenti sono in realtà lo stesso a meno di permutazione degli elementi
     if ((a[0]-b[0]).squaredNorm() < 10*numeric_limits<double>::epsilon() && (a[1]-b[1]).squaredNorm() < 10*numeric_limits<double>::epsilon()) {
         return true;
     }
@@ -57,6 +50,8 @@ vector<Fracture> fractureInput(const string& filename, array<double, 6>& domain_
 
     output.reserve(n_fractures);
 
+    // inizializzo le variabili necessarie per determinare il più piccolo sottoinsieme di R^3 che contiene le fratture di input
+    // mi servono per gli algoritmi di min e max su ogni coordinata
     double x_coord_min = numeric_limits<double>::max();
     double x_coord_max = numeric_limits<double>::min();
     double y_coord_min = numeric_limits<double>::max();
@@ -65,6 +60,7 @@ vector<Fracture> fractureInput(const string& filename, array<double, 6>& domain_
     double z_coord_max = numeric_limits<double>::min();
 
     for (unsigned int i= 0; i < n_fractures; i++){
+        // cominio leggendo il file a blocchi di 6 righe poiché la struttura è fissa
         getline(infile,line);
 
         getline(infile,line);
@@ -81,6 +77,7 @@ vector<Fracture> fractureInput(const string& filename, array<double, 6>& domain_
 
         getline(infile,line);
         istringstream x_line(line);
+        // mentre memorizzo le coordinate x cerco il minimo e il massimo raggiunto e li memorizzo
         for (unsigned int j=0; j<n_vertices; j++) {
             string x_coord;
             getline(x_line, x_coord, ';');
@@ -95,6 +92,7 @@ vector<Fracture> fractureInput(const string& filename, array<double, 6>& domain_
 
         getline(infile,line);
         istringstream y_line(line);
+        // mentre memorizzo le coordinate y cerco il minimo e il massimo raggiunto e li memorizzo
         for (unsigned int j=0; j<n_vertices; j++) {
             string y_coord;
             getline(y_line, y_coord, ';');
@@ -109,6 +107,7 @@ vector<Fracture> fractureInput(const string& filename, array<double, 6>& domain_
 
         getline(infile,line);
         istringstream z_line(line);
+        // mentre memorizzo le coordinate z cerco il minimo e il massimo raggiunto e li memorizzo
         for (unsigned int j=0; j<n_vertices; j++) {
             string z_coord;
             getline(z_line, z_coord, ';');
@@ -121,10 +120,12 @@ vector<Fracture> fractureInput(const string& filename, array<double, 6>& domain_
             }
         }
 
+        // creo la frattura e la memorizzo nell vettore di output
         Fracture element = Fracture(id, n_vertices, vertices);
         output.push_back(element);
     }
 
+    // aggiorno gli estremi del dominio
     domain_borders[0] = x_coord_min;
     domain_borders[1] = x_coord_max;
     domain_borders[2] = y_coord_min;
@@ -136,14 +137,11 @@ vector<Fracture> fractureInput(const string& filename, array<double, 6>& domain_
     return output;
 }
 
-
 void Stampa1(string nome_file,TracesMesh& mesh){
     ofstream ofs(nome_file);
     if (! ofs.is_open()){
         cerr<< "errore di apertura del file di output \n";
     }
-
-
     ofs<<"# Number of Traces"<<'\n';
     ofs<<mesh.traces_id.size()<<'\n';
     ofs<<"# TraceId; FractureId1; FractureId2; X1; Y1; Z1; X2; Y2; Z2"<<'\n';
@@ -157,12 +155,37 @@ void Stampa1(string nome_file,TracesMesh& mesh){
         ofs<< mesh.traces_vertices[i][1][0]<<" ; ";
         ofs<< mesh.traces_vertices[i][1][1]<<" ; ";
         ofs<< mesh.traces_vertices[i][1][2]<<'\n';
-
     }
     ofs.close();
 }
 
-
-
+void ExportSTL(string nome_file, vector<PolygonalMesh>& mesh_collection) {
+    ofstream ofs(nome_file);
+    if (! ofs.is_open()){
+        cerr << "errore di apertura del file di output \n";
+    }
+    ofs << "solid mesh" << endl;
+    for(PolygonalMesh& mesh: mesh_collection) {
+        for (unsigned int& polygon_id: mesh.activatedPolygons) {
+            for (unsigned int i = 2; i<mesh.VerticesCell2Ds[polygon_id].size(); i++) {
+                array<Eigen::Vector3d, 3> vertices = {
+                    mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygon_id][0]],
+                    mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygon_id][i-1]],
+                    mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygon_id][i]]
+                };
+                ofs << "  facet normal " << mesh.normal(0) << " " << mesh.normal(1) << " " << mesh.normal(2) << endl;
+                ofs << "    outer loop" << endl;
+                ofs << "      vertex " << vertices[0](0) << " " << vertices[0](1) << " " << vertices[0](2) << endl;
+                ofs << "      vertex " << vertices[1](0) << " " << vertices[1](1) << " " << vertices[1](2) << endl;
+                ofs << "      vertex " << vertices[2](0) << " " << vertices[2](1) << " " << vertices[2](2) << endl;
+                ofs << "    endloop" << endl;
+                ofs << "  endfacet" << endl;
+            }
+        }
+    }
+    ofs << "endsolid" << endl;
+    ofs.close();
+}
 
 }
+
