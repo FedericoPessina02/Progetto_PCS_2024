@@ -25,6 +25,7 @@ vector<Eigen::Vector3d> calculateDistinctPoints(vector<Eigen::Vector3d>& a, vect
 }
 
 bool compareSegments(vector<Eigen::Vector3d>& a, vector<Eigen::Vector3d>& b) {
+    // verifico se i due segmenti sono in realtà lo stesso a meno di permutazione degli elementi
     if ((a[0]-b[0]).squaredNorm() < 10*numeric_limits<double>::epsilon() && (a[1]-b[1]).squaredNorm() < 10*numeric_limits<double>::epsilon()) {
         return true;
     }
@@ -49,6 +50,8 @@ vector<Fracture> fractureInput(const string& filename, array<double, 6>& domain_
 
     output.reserve(n_fractures);
 
+    // inizializzo le variabili necessarie per determinare il più piccolo sottoinsieme di R^3 che contiene le fratture di input
+    // mi servono per gli algoritmi di min e max su ogni coordinata
     double x_coord_min = numeric_limits<double>::max();
     double x_coord_max = numeric_limits<double>::min();
     double y_coord_min = numeric_limits<double>::max();
@@ -57,6 +60,7 @@ vector<Fracture> fractureInput(const string& filename, array<double, 6>& domain_
     double z_coord_max = numeric_limits<double>::min();
 
     for (unsigned int i= 0; i < n_fractures; i++){
+        // cominio leggendo il file a blocchi di 6 righe poiché la struttura è fissa
         getline(infile,line);
 
         getline(infile,line);
@@ -73,6 +77,7 @@ vector<Fracture> fractureInput(const string& filename, array<double, 6>& domain_
 
         getline(infile,line);
         istringstream x_line(line);
+        // mentre memorizzo le coordinate x cerco il minimo e il massimo raggiunto e li memorizzo
         for (unsigned int j=0; j<n_vertices; j++) {
             string x_coord;
             getline(x_line, x_coord, ';');
@@ -87,6 +92,7 @@ vector<Fracture> fractureInput(const string& filename, array<double, 6>& domain_
 
         getline(infile,line);
         istringstream y_line(line);
+        // mentre memorizzo le coordinate y cerco il minimo e il massimo raggiunto e li memorizzo
         for (unsigned int j=0; j<n_vertices; j++) {
             string y_coord;
             getline(y_line, y_coord, ';');
@@ -101,6 +107,7 @@ vector<Fracture> fractureInput(const string& filename, array<double, 6>& domain_
 
         getline(infile,line);
         istringstream z_line(line);
+        // mentre memorizzo le coordinate z cerco il minimo e il massimo raggiunto e li memorizzo
         for (unsigned int j=0; j<n_vertices; j++) {
             string z_coord;
             getline(z_line, z_coord, ';');
@@ -113,10 +120,12 @@ vector<Fracture> fractureInput(const string& filename, array<double, 6>& domain_
             }
         }
 
+        // creo la frattura e la memorizzo nell vettore di output
         Fracture element = Fracture(id, n_vertices, vertices);
         output.push_back(element);
     }
 
+    // aggiorno gli estremi del dominio
     domain_borders[0] = x_coord_min;
     domain_borders[1] = x_coord_max;
     domain_borders[2] = y_coord_min;

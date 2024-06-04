@@ -11,7 +11,7 @@ using namespace Eigen;
 int main(int argc, char **argv)
 {
     int partition_dimension = 2;
-    array<double, 6> domain_borders; //
+    array<double, 6> domain_borders;
     vector<Fracture> fractures = Utils::fractureInput("./DFN/test/FR3_P2.txt", domain_borders); //elenco fratture
     map<int, vector<Fracture>> id_to_fractures = Algorithms::assignPartition(fractures, domain_borders, partition_dimension);
     TracesMesh mesh;
