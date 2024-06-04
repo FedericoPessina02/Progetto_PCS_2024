@@ -123,40 +123,43 @@ vector<PolygonalMesh> cutPolygonalMesh(map<int, vector<Fracture>>& id_to_fractur
     return output;
 }
 
-void cutPolygonBySegment(Fracture& fracture, PolygonalMesh& mesh, unsigned int polygonId, array<unsigned int,2> segment, array<unsigned int,2> intersection_starters) {
-    // taglia il poligono (convesso) in due seguendo il segmento (passante per due suoi lati)
+void cutPolygonBySegment(Fracture& fracture, PolygonalMesh& mesh, unsigned int polygonId, vector<unsigned int> total_points, array<unsigned int,2> segment) {
+    // taglia il poligono in due sottopoligoni seguendo il segmento avente come estremi due vertici sul perimetro del poligono
     vector<unsigned int> polygon_a_vertices;
     vector<unsigned int> polygon_b_vertices;
-    Eigen::Vector3d cut_line = mesh.CoordinateCell0Ds[segment[1]] - mesh.CoordinateCell0Ds[segment[0]];
-    for (unsigned int& vertex_id: mesh.VerticesCell2Ds[polygonId]) {
-        Eigen::Vector3d link_line = mesh.CoordinateCell0Ds[vertex_id] - mesh.CoordinateCell0Ds[segment[0]];
-        Eigen::Vector3d product_line = cut_line.cross(link_line);
-        double evaluation_coef = fracture.normal.dot(product_line) + fracture.plane_d;
-        if (evaluation_coef > 5*numeric_limits<double>::epsilon()) {
-            polygon_a_vertices.push_back(vertex_id);
-        } else if(evaluation_coef < -5*numeric_limits<double>::epsilon()) {
-            polygon_b_vertices.push_back(vertex_id);
-        } else {
-            cerr << "Cut segment is parallel to an edge of the polygon";
-            return;
-        }
-        if (vertex_id == intersection_starters[0]) {
-            if (std::find(polygon_a_vertices.begin(), polygon_a_vertices.end(),segment[0])==polygon_a_vertices.end()) {
-                polygon_a_vertices.push_back(segment[0]);
-            }
-            if (std::find(polygon_b_vertices.begin(), polygon_b_vertices.end(),segment[0])==polygon_b_vertices.end()) {
-                polygon_b_vertices.push_back(segment[0]);
+    unsigned int CUT_ALG = 0;
+    if (CUT_ALG == 0) {
+        Eigen::Vector3d cut_line = mesh.CoordinateCell0Ds[segment[1]] - mesh.CoordinateCell0Ds[segment[0]];
+        for (unsigned int& vertex_id: total_points) {
+            Eigen::Vector3d link_line = mesh.CoordinateCell0Ds[vertex_id] - mesh.CoordinateCell0Ds[segment[0]];
+            Eigen::Vector3d product_line = cut_line.cross(link_line);
+            double evaluation_coef = fracture.normal.dot(product_line) + fracture.plane_d;
+            if (product_line.squaredNorm() < numeric_limits<double>::epsilon()) {
+                polygon_a_vertices.push_back(vertex_id);
+                polygon_b_vertices.push_back(vertex_id);
+            } else if (evaluation_coef > 5*numeric_limits<double>::epsilon()) {
+                polygon_a_vertices.push_back(vertex_id);
+            } else if(evaluation_coef < -5*numeric_limits<double>::epsilon()) {
+                polygon_b_vertices.push_back(vertex_id);
             }
         }
-        if (vertex_id == intersection_starters[1]) {
-            if (std::find(polygon_a_vertices.begin(), polygon_a_vertices.end(),segment[1])==polygon_a_vertices.end()) {
-                polygon_a_vertices.push_back(segment[1]);
-            }
-            if (std::find(polygon_b_vertices.begin(), polygon_b_vertices.end(),segment[1])==polygon_b_vertices.end()) {
-                polygon_b_vertices.push_back(segment[1]);
+    } else if (CUT_ALG == 1) {
+        bool polygon_flag = true;
+        for (unsigned int& vertex_id: total_points) {
+            if (vertex_id == segment[0] || vertex_id == segment[1]) {
+                polygon_a_vertices.push_back(vertex_id);
+                polygon_b_vertices.push_back(vertex_id);
+                polygon_flag = !polygon_flag;
+            } else {
+                if (polygon_flag) {
+                    polygon_a_vertices.push_back(vertex_id);
+                } else {
+                    polygon_b_vertices.push_back(vertex_id);
+                }
             }
         }
     }
+
     // creo un nuovo poligono assegnandogli gli estremi dell'altro poligono risultante
     unsigned int id_1 = mesh.IdCell2Ds.size();
     mesh.IdCell2Ds.push_back(id_1);

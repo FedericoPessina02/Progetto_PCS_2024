@@ -330,7 +330,8 @@ PolygonalMesh Fracture::generatePolygonalMesh(TracesMesh& traces) {
     return mesh;
 }
 
-void Fracture::cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d a, Eigen::Vector3d b) { //a e b danno il segmento che tocca i bordi dei poligoni da tagliare
+void Fracture::cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d a, Eigen::Vector3d b) {
+    // taglia la mesh intera lungo un segmento che ha come estremi due punti appartenenti a due lati dentro la mesh
     Eigen::Vector3d direction = b-a;
     Eigen::Vector3d application_point = a;
     vector<unsigned int> to_be_modified_polygons = mesh.activatedPolygons; //id dei poligoni interessati
@@ -373,7 +374,16 @@ void Fracture::cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d a, Eigen::V
         segment[0] = mesh.addPoint(intersection_points[0]);
         segment[1] = mesh.addPoint(intersection_points[1]);
         array<unsigned int, 2> line_starters = {intersection_starters[0], intersection_starters[1]};
-        Algorithms::cutPolygonBySegment(*this, mesh, polygonId, segment, line_starters);
+        vector<unsigned int> total_points;
+        for (unsigned int& vertex_id: mesh.VerticesCell2Ds[polygonId]) {
+            total_points.push_back(vertex_id);
+            if (vertex_id == intersection_starters[0] && vertex_id != segment[0] ) {
+                total_points.push_back(segment[0]);
+            } else if (vertex_id == intersection_starters[1] && vertex_id != segment[1] ) {
+                total_points.push_back(segment[1]);
+            }
+        }
+        Algorithms::cutPolygonBySegment(*this, mesh, polygonId, total_points, segment);
     }
 
 }

@@ -21,14 +21,6 @@ vector<Eigen::Vector3d> calculateDistinctPoints(vector<Eigen::Vector3d>& a, vect
                 result.push_back(b_el);
             }
         }
-    // for (const Eigen::Vector3d& b_el : b) {
-    //     if ((a[0]-b_el).norm() >= 8*numeric_limits<double>::epsilon()) {
-    //         result.push_back(b_el);
-    //     }
-    // }
-    // if ((a[1]-b[0]).norm() >= 8*numeric_limits<double>::epsilon() && (a[1]-b[1]).norm() >= 8*numeric_limits<double>::epsilon()) {
-    //     result.push_back(a[1]);
-    // }
     return result;
 }
 
@@ -142,8 +134,6 @@ void Stampa1(string nome_file,TracesMesh& mesh){
     if (! ofs.is_open()){
         cerr<< "errore di apertura del file di output \n";
     }
-
-
     ofs<<"# Number of Traces"<<'\n';
     ofs<<mesh.traces_id.size()<<'\n';
     ofs<<"# TraceId; FractureId1; FractureId2; X1; Y1; Z1; X2; Y2; Z2"<<'\n';
@@ -157,7 +147,6 @@ void Stampa1(string nome_file,TracesMesh& mesh){
         ofs<< mesh.traces_vertices[i][1][0]<<" ; ";
         ofs<< mesh.traces_vertices[i][1][1]<<" ; ";
         ofs<< mesh.traces_vertices[i][1][2]<<'\n';
-
     }
     ofs.close();
 }
