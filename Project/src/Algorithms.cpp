@@ -132,21 +132,29 @@ void cutPolygonBySegment(Fracture& fracture, PolygonalMesh& mesh, unsigned int p
         Eigen::Vector3d link_line = mesh.CoordinateCell0Ds[vertex_id] - mesh.CoordinateCell0Ds[segment[0]];
         Eigen::Vector3d product_line = cut_line.cross(link_line);
         double evaluation_coef = fracture.normal.dot(product_line) + fracture.plane_d;
-        if (evaluation_coef > 0) {
+        if (evaluation_coef > 5*numeric_limits<double>::epsilon()) {
             polygon_a_vertices.push_back(vertex_id);
-        } else if(evaluation_coef < 0) {
+        } else if(evaluation_coef < -5*numeric_limits<double>::epsilon()) {
             polygon_b_vertices.push_back(vertex_id);
         } else {
             cerr << "Cut segment is parallel to an edge of the polygon";
             return;
         }
         if (vertex_id == intersection_starters[0]) {
-            polygon_a_vertices.push_back(segment[0]);
-            polygon_b_vertices.push_back(segment[0]);
+            if (std::find(polygon_a_vertices.begin(), polygon_a_vertices.end(),segment[0])==polygon_a_vertices.end()) {
+                polygon_a_vertices.push_back(segment[0]);
+            }
+            if (std::find(polygon_b_vertices.begin(), polygon_b_vertices.end(),segment[0])==polygon_b_vertices.end()) {
+                polygon_b_vertices.push_back(segment[0]);
+            }
         }
         if (vertex_id == intersection_starters[1]) {
-            polygon_a_vertices.push_back(segment[1]);
-            polygon_b_vertices.push_back(segment[1]);
+            if (std::find(polygon_a_vertices.begin(), polygon_a_vertices.end(),segment[1])==polygon_a_vertices.end()) {
+                polygon_a_vertices.push_back(segment[1]);
+            }
+            if (std::find(polygon_b_vertices.begin(), polygon_b_vertices.end(),segment[1])==polygon_b_vertices.end()) {
+                polygon_b_vertices.push_back(segment[1]);
+            }
         }
     }
     // creo un nuovo poligono assegnandogli gli estremi dell'altro poligono risultante
