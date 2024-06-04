@@ -34,6 +34,8 @@ vector<Eigen::Vector3d> calculateIntersectionsPoints(Fracture& fracture, Eigen::
         Eigen::Vector3d b = point - fracture.vertices.col(i);
         Eigen::Vector2d parameters = A.colPivHouseholderQr().solve(b);
         if (-10*numeric_limits<double>::epsilon()<parameters(0) && parameters(0)<1-10*numeric_limits<double>::epsilon()) {
+            // verifico che l'intersezione con il lato sia una combinazione convessa, ossia che effettivamente il punto di intersezione
+            // cada all'interno del lato
             Eigen::Vector3d point = fracture.vertices.col(i) + parameters(0)*lato;
             result.push_back(point);
         }
@@ -60,7 +62,8 @@ map<int, vector<Fracture>> assignPartition(vector<Fracture>& fractures, array<do
         // converte l'id della partizione da base n=partitions_number a base 10 (id sequenziali) e aggiunge 1 (0 riservato alle fratture che sforano)
         int partition_id_vertex_0 = 1 + x_partition_0 + y_partition_0*partitions_number + z_partition_0*partitions_number*partitions_number;
         el.partition_id = partition_id_vertex_0;
-        for(unsigned int i = 1; i < el.num_vertices; i++) {//verifica che tutti i vertici della frattura siano nella stessa partizione
+        for(unsigned int i = 1; i < el.num_vertices; i++) {
+            //verifica che tutti i vertici della frattura siano nella stessa partizione
             //altrimenti viene assegnato il valore 0
             int x_partition = floor(abs(el.vertices(0, i) - domain_borders[0]) / chunk_size[0]);
             int y_partition = floor(abs(el.vertices(1, i) - domain_borders[2]) / chunk_size[1]);
@@ -71,9 +74,13 @@ map<int, vector<Fracture>> assignPartition(vector<Fracture>& fractures, array<do
                 break;
             }
         }
+        // la frattura viene aggiunta alla mappa nel vettore associato al suo id
         id_to_fractures[el.partition_id].push_back(el);
     }
-    fractures.clear();
+
+    // il vettore di fratture iniziali viene cancellato dalla memoria per liberare spazio
+    fractures.clear(); // <- rimuovo gli elementi dal vettore
+    fractures.shrink_to_fit(); // <- libero la memoria riservata
     return id_to_fractures;
 }
 
@@ -102,18 +109,23 @@ void cutTracesOverlapping(vector<Fracture>& overlapping, vector<Fracture>& other
 }
 
 void cutTraces(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh) {
+    // funzione di smistamento per gestire il taglio delle tracce
+    // analizza tutte le partizioni
     for (unsigned int id = 0; id < id_to_fractures.size(); id++) {
         if (id_to_fractures[id].size() == 0) {
             continue;
         }
-        cutTracesInsidePartition(id_to_fractures[id], mesh);
+        cutTracesInsidePartition(id_to_fractures[id], mesh); // calcolo delle tracce generate all'interno della partizione
         if (id != 0) {
+            // se sto analizzando le fratture di una partizione ben definita, devo anche confrontarle con le fratture con label 0
             cutTracesOverlapping(id_to_fractures[0], id_to_fractures[id], mesh);
         }
     }
 }
 
 vector<PolygonalMesh> cutPolygonalMesh(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& traces_mesh) {
+    // funzione di smistamente per avviare il taglio delle mesh poligonali associate a ogni frattura
+    // successivamente le memorizza nel vettore di output
     vector<PolygonalMesh> output;
     for (unsigned int id = 0; id < id_to_fractures.size(); id++) {
         for (Fracture& el: id_to_fractures[id]) {
@@ -123,54 +135,86 @@ vector<PolygonalMesh> cutPolygonalMesh(map<int, vector<Fracture>>& id_to_fractur
     return output;
 }
 
-void cutPolygonBySegment(Fracture& fracture, PolygonalMesh& mesh, unsigned int polygonId, array<unsigned int,2> segment, array<unsigned int,2> intersection_starters) {
-    // taglia il poligono (convesso) in due seguendo il segmento (passante per due suoi lati)
+void cutPolygonBySegment(Fracture& fracture, PolygonalMesh& mesh, unsigned int polygonId, vector<unsigned int> total_points, array<unsigned int,2> segment) {
+    // taglia il poligono in due sottopoligoni seguendo il segmento avente come estremi due vertici sul perimetro del poligono
+    // come prima cosa creo i due vettori che conterranno gli id dei vertici dei due sottopoligoni risultanti
     vector<unsigned int> polygon_a_vertices;
     vector<unsigned int> polygon_b_vertices;
-    Eigen::Vector3d cut_line = mesh.CoordinateCell0Ds[segment[1]] - mesh.CoordinateCell0Ds[segment[0]];
-    for (unsigned int& vertex_id: mesh.VerticesCell2Ds[polygonId]) {
-        Eigen::Vector3d link_line = mesh.CoordinateCell0Ds[vertex_id] - mesh.CoordinateCell0Ds[segment[0]];
-        Eigen::Vector3d product_line = cut_line.cross(link_line);
-        double evaluation_coef = fracture.normal.dot(product_line) + fracture.plane_d;
-        if (evaluation_coef > 0) {
-            polygon_a_vertices.push_back(vertex_id);
-        } else if(evaluation_coef < 0) {
-            polygon_b_vertices.push_back(vertex_id);
-        } else {
-            cerr << "Cut segment is parallel to an edge of the polygon";
-            return;
+    unsigned int CUT_ALG = 0; // stabilisce quale algoritmo usare
+    if (CUT_ALG == 0) {
+        /* ALGORITMO 1
+        Questo algoritmo sfrutta i prodotti vettoriali per stabilire a quale sottopoligono appartengono i vari vertici
+        Scorrendo uno ad uno tutti i vertici faccio il prodotto vettoriale tra il segmento di taglio e la congiungente del vertice in questione con un punto del segmento
+        il vettore ottenuto mi permette di discriminare il sottopoligono di appartenenza */
+        Eigen::Vector3d cut_line = mesh.CoordinateCell0Ds[segment[1]] - mesh.CoordinateCell0Ds[segment[0]];
+        for (unsigned int& vertex_id: total_points) {
+            if (vertex_id == segment[0] || vertex_id == segment[1]) {
+                // se il punto in questione appartiene al segmento di taglio esso sarà necessariamente in entrambi i sottopoligoni risultanti
+                polygon_a_vertices.push_back(vertex_id);
+                polygon_b_vertices.push_back(vertex_id);
+                continue;
+            }
+            Eigen::Vector3d link_line = mesh.CoordinateCell0Ds[vertex_id] - mesh.CoordinateCell0Ds[segment[0]];
+            Eigen::Vector3d product_line = cut_line.cross(link_line);
+            double evaluation_coef = fracture.normal.dot(product_line) + fracture.plane_d;
+            // se sotituisco il prodotto vettoriale nell'equazione planare posso discriminare a quale sottopoligono appartiene il punto guardando il segno
+            // la scelta di associare al primo sottopoligono i valori positivi è totalmente arbitraria...
+            if (evaluation_coef > 5*numeric_limits<double>::epsilon()) {
+                polygon_a_vertices.push_back(vertex_id);
+            } else if(evaluation_coef < -5*numeric_limits<double>::epsilon()) {
+                polygon_b_vertices.push_back(vertex_id);
+            }
         }
-        if (vertex_id == intersection_starters[0]) {
-            polygon_a_vertices.push_back(segment[0]);
-            polygon_b_vertices.push_back(segment[0]);
-        }
-        if (vertex_id == intersection_starters[1]) {
-            polygon_a_vertices.push_back(segment[1]);
-            polygon_b_vertices.push_back(segment[1]);
+    } else if (CUT_ALG == 1) {
+        /* ALGORITMO 2
+        Questo algoritmo sfrutta la lettura sequenziale del vettore ordinato in senso antiorario dei punti
+        parte con l'assegnare i punti al primo sottopoligono, e quando si imbatte in un punto appartenente al segmento di taglio
+        inverte la variabile booleana e comincia a memorizzare i punti successivi nell'altro sottopoligono (i punti di taglio vengono oviamente memorizzati in entrambi i sottopoligoni */
+        // l'algoritmo per il resto è molto semplice
+        bool polygon_flag = true;
+        for (unsigned int& vertex_id: total_points) {
+            if (vertex_id == segment[0] || vertex_id == segment[1]) {
+                polygon_a_vertices.push_back(vertex_id);
+                polygon_b_vertices.push_back(vertex_id);
+                polygon_flag = !polygon_flag;
+            } else {
+                if (polygon_flag) {
+                    polygon_a_vertices.push_back(vertex_id);
+                } else {
+                    polygon_b_vertices.push_back(vertex_id);
+                }
+            }
         }
     }
 
-    // creo un nuovo poligono assegnandogli gli estremi dell'altro poligono risultante
+    //ora che ho i due vettori contenenti i punti distribuiti tra i due sottopoligoni devo aggiornare la mesh
+    // come prima cosa creo due nuovi poligoni e vi assegno le rispettive liste di punti
+    // notare che gli algoritmi non modificano l'ordine dei punti --> l'integrità della mesh di partenza è preservata -sempre-
     unsigned int id_1 = mesh.IdCell2Ds.size();
     mesh.IdCell2Ds.push_back(id_1);
     mesh.VerticesCell2Ds.push_back(polygon_a_vertices);
-
     unsigned int id_2 = mesh.IdCell2Ds.size();
     mesh.IdCell2Ds.push_back(id_2);
     mesh.VerticesCell2Ds.push_back(polygon_b_vertices);
 
+    // il poligono padre viene cancellato dall'elenco dei poligoni attivi e al contempo memorizzo i due poligoni nuovi come attivi
     mesh.activatedPolygons.erase(remove(mesh.activatedPolygons.begin(), mesh.activatedPolygons.end(), polygonId), mesh.activatedPolygons.end());
     mesh.activatedPolygons.push_back(id_1);
     mesh.activatedPolygons.push_back(id_2);
 
+    // aggiorno ora i lati della mesh
+    // aggiungo il primo vertice di nuovo in fondo per poter fare la lettura ciclica dei lati senza dover distinguere casi particolari
+    //     posso modificarlo perché tanto ho copiato il contenuto in mesh.VerticesCell2Ds, quindi sono effettivamente due oggetti separati
     polygon_a_vertices.push_back(polygon_a_vertices[0]);
     vector<unsigned int> polygon_a_edges;
+    // scorro i vertici del poligono e salvo il lato (se esiste già mi restituisce l'id del lato preesistente)
     for (unsigned int i = 0; i < polygon_a_vertices.size() - 1; i++) {
         unsigned int edge_id = mesh.addEdge(polygon_a_vertices[i], polygon_a_vertices[i+1]);
         polygon_a_edges.push_back(edge_id);
     }
     mesh.EdgesCell2Ds.push_back(polygon_a_edges);
 
+    // faccio lo stesso procedimento per il secondo sottopoligono
     polygon_b_vertices.push_back(polygon_b_vertices[0]);
     vector<unsigned int> polygon_b_edges;
     for (unsigned int i = 0; i < polygon_b_vertices.size() - 1; i++) {
@@ -190,42 +234,46 @@ void ordinaFract(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh, 
     auto compareByValueDescending = [](const pair<int, double>& a, const pair<int, double>& b) {
         return a.second > b.second;
     };
+    for (unsigned int partition_id = 0; partition_id < id_to_fractures.size(); partition_id++) {
+        if (id_to_fractures[partition_id].size() != 0) {
+            for (Fracture& fract : id_to_fractures[partition_id]){
+                ofs<<"# FractureId; NumTraces"<<'\n';
+                ofs<<fract.id<<" ; ";
+                ofs<<fract.internal_traces.size()+fract.passant_traces.size()<<'\n';
+                ofs<<"# TraceId; Tips; Length"<<'\n';
 
-    for (Fracture& fract : id_to_fractures[0]){
-        ofs<<"# FractureId; NumTraces"<<'\n';
-        ofs<<fract.id<<" ; ";
-        ofs<<fract.internal_traces.size()+fract.passant_traces.size()<<'\n';
-        ofs<<"# TraceId; Tips; Length"<<'\n';
+                map<int,double> lunghezze_passanti; //mappa con chiave=id_traccia, valore=lunghezza_traccia
+                map<int,double> lunghezze_interne;
 
-        map<int,double> lunghezze_passanti; //mappa con chiave=id_traccia, valore=lunghezza_traccia
-        map<int,double> lunghezze_interne;
+                for (unsigned int& elem :fract.internal_traces){
+                    lunghezze_interne[elem]=mesh.traces_length[elem];
+                }
 
-        for (unsigned int& elem :fract.internal_traces){
-            lunghezze_interne[elem]=mesh.traces_length[elem];
-        }
+                for (unsigned int& elem :fract.passant_traces){ //Id di ogni traccia passante
+                    lunghezze_passanti[elem]=mesh.traces_length[elem];
+                }
 
-        for (unsigned int& elem :fract.passant_traces){//Id di ogni traccia passante
-            lunghezze_passanti[elem]=mesh.traces_length[elem];
-        }
+                //crea un vettore di coppie (vec) contenente tutte le coppie chiave-valore presenti nella mappa lunghezze_passanti.
+                vector<pair<int, double>> vec(lunghezze_passanti.begin(), lunghezze_passanti.end());
+                //crea un vettore di coppie (vect) contenente tutte le coppie chiave-valore presenti nella mappa lunghezze_interne.
+                vector<pair<int, double>> vect(lunghezze_interne.begin(), lunghezze_interne.end());
 
-        //crea un vettore di coppie (vec) contenente tutte le coppie chiave-valore presenti nella mappa lunghezze_passanti.
-        vector<pair<int, double>> vec(lunghezze_passanti.begin(), lunghezze_passanti.end());
-        //crea un vettore di coppie (vect) contenente tutte le coppie chiave-valore presenti nella mappa lunghezze_interne.
-        vector<pair<int, double>> vect(lunghezze_interne.begin(), lunghezze_interne.end());
+                // Ordinamento del vettore di coppie in base ai valori
+                /* usare bubblesort o mergesort */
+                sort(vec.begin(), vec.end(), compareByValueDescending);
+                sort(vect.begin(), vect.end(), compareByValueDescending);
 
-        // Ordinamento del vettore di coppie in base ai valori
-        sort(vec.begin(), vec.end(), compareByValueDescending);
-        sort(vect.begin(), vect.end(), compareByValueDescending);
-
-        for (const auto& pair : vect) {
-            ofs<< pair.first <<" ; ";
-            ofs<<"true"<<" ; ";
-            ofs<< pair.second<<'\n';
-        }
-        for (const auto& pair : vec) {
-            ofs<< pair.first <<" ; ";
-            ofs<<"false"<<" ; ";
-            ofs<< pair.second<<'\n';
+                for (const auto& pair : vect) {
+                    ofs<< pair.first <<" ; ";
+                    ofs<<"true"<<" ; ";
+                    ofs<< pair.second<<'\n';
+                }
+                for (const auto& pair : vec) {
+                    ofs<< pair.first <<" ; ";
+                    ofs<<"false"<<" ; ";
+                    ofs<< pair.second<<'\n';
+                }
+            }
         }
     }
     ofs.close();
