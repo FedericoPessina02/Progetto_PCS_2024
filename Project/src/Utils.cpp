@@ -137,7 +137,6 @@ vector<Fracture> fractureInput(const string& filename, array<double, 6>& domain_
     return output;
 }
 
-
 void Stampa1(string nome_file,TracesMesh& mesh){
     ofstream ofs(nome_file);
     if (! ofs.is_open()){
@@ -159,5 +158,34 @@ void Stampa1(string nome_file,TracesMesh& mesh){
     }
     ofs.close();
 }
+
+void ExportSTL(string nome_file, vector<PolygonalMesh>& mesh_collection) {
+    ofstream ofs(nome_file);
+    if (! ofs.is_open()){
+        cerr << "errore di apertura del file di output \n";
+    }
+    ofs << "solid mesh" << endl;
+    for(PolygonalMesh& mesh: mesh_collection) {
+        for (unsigned int& polygon_id: mesh.activatedPolygons) {
+            for (unsigned int i = 2; i<mesh.VerticesCell2Ds[polygon_id].size(); i++) {
+                array<Eigen::Vector3d, 3> vertices = {
+                    mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygon_id][0]],
+                    mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygon_id][i-1]],
+                    mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygon_id][i-2]]
+                };
+                ofs << "  facet normal " << mesh.normal(0) << " " << mesh.normal(1) << " " << mesh.normal(2) << endl;
+                ofs << "    outer loop" << endl;
+                ofs << "      vertex " << vertices[0](0) << " " << vertices[0](1) << " " << vertices[0](2) << endl;
+                ofs << "      vertex " << vertices[1](0) << " " << vertices[1](1) << " " << vertices[1](2) << endl;
+                ofs << "      vertex " << vertices[2](0) << " " << vertices[2](1) << " " << vertices[2](2) << endl;
+                ofs << "    endloop" << endl;
+                ofs << "  endfacet" << endl;
+            }
+        }
+    }
+    ofs << "endsolid" << endl;
+    ofs.close();
+}
+
 }
 

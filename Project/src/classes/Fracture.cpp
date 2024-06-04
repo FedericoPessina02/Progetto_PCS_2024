@@ -254,6 +254,7 @@ PolygonalMesh Fracture::generatePolygonalMesh(TracesMesh& traces) {
     // essa contiene un solo poligono, il quale ricalca la struttura della frattura
     PolygonalMesh mesh;
     mesh.FractureId = id;
+    mesh.normal = normal;
     for (unsigned int i = 0; i < num_vertices; i++) {
         mesh.CoordinateCell0Ds.push_back(vertices.col(i));
         mesh.IdCell0Ds.push_back(i);

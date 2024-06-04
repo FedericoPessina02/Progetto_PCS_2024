@@ -6,6 +6,7 @@ using namespace std;
 
 struct PolygonalMesh {
     unsigned int FractureId;
+    Eigen::Vector3d normal;
     vector<unsigned int> IdCell0Ds; // id punti
     vector<Eigen::Vector3d> CoordinateCell0Ds; // coordinate punti
     vector<unsigned int> IdCell1Ds; // id lati
