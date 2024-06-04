@@ -171,7 +171,7 @@ void ExportSTL(string nome_file, vector<PolygonalMesh>& mesh_collection) {
                 array<Eigen::Vector3d, 3> vertices = {
                     mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygon_id][0]],
                     mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygon_id][i-1]],
-                    mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygon_id][i-2]]
+                    mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygon_id][i]]
                 };
                 ofs << "  facet normal " << mesh.normal(0) << " " << mesh.normal(1) << " " << mesh.normal(2) << endl;
                 ofs << "    outer loop" << endl;
