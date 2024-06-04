@@ -11,21 +11,205 @@ using namespace Eigen;
 
 int main(int argc, char **argv)
 {
-    // int partition_dimension = 2;
-    // array<double, 6> domain_borders; //
-    // vector<Fracture> fractures = Utils::fractureInput("./DFN/FR50_data.txt", domain_borders); //elenco fratture
-    // map<int, vector<Fracture>> id_to_fractures = Algorithms::assignPartition(fractures, domain_borders, partition_dimension);
-    // TracesMesh mesh;
-    // Algorithms::cutTraces(id_to_fractures, mesh);
-    // Utils::Stampa1("results1.csv",mesh);
-    // Algorithms::ordinaFract(id_to_fractures, mesh,"results2.csv");
-    // vector<PolygonalMesh> polygons = Algorithms::cutPolygonalMesh(id_to_fractures, mesh);
+    int partition_dimension = 2;
+    array<double, 6> domain_borders; //
+    vector<Fracture> fractures = Utils::fractureInput("./DFN/FR82_data.txt", domain_borders); //elenco fratture
+    map<int, vector<Fracture>> id_to_fractures = Algorithms::assignPartition(fractures, domain_borders, partition_dimension);
+    TracesMesh mesh;
+    Algorithms::cutTraces(id_to_fractures, mesh);
+    Utils::Stampa1("results1.csv",mesh);
+    Algorithms::ordinaFract(id_to_fractures, mesh,"results2.csv");
+    vector<PolygonalMesh> polygons = Algorithms::cutPolygonalMesh(id_to_fractures, mesh);
 
     ::testing::InitGoogleTest(&argc,argv);
     return RUN_ALL_TESTS();
 }
 
 // /*passant traces for each fracture;  internal traces;*/
+
+TEST(calculateSphereTest,radius)
+{   //NB. Il raggio calcolato è al quadrato
+
+    unsigned int id = 0;
+    unsigned int num_vertices = 4;
+    Eigen::MatrixXd poli1;
+    poli1.resize(3,4);
+    poli1 << 0,1,1,0,0,0,1,1,0,0,0,0;
+    Fracture frattura(id,num_vertices,poli1);
+    frattura.calculateSphere();
+
+    unsigned int id2 = 1;
+    unsigned int num_vertices2 = 3;
+    Eigen::MatrixXd poli2;
+    poli2.resize(3,3);
+    poli2 << 0,3,1.5,0,0,2.5980762113533,0,0,0;
+    Fracture frattura2(id2,num_vertices2,poli2);
+    frattura2.calculateSphere();
+
+
+    EXPECT_TRUE(abs(frattura.radius-0.5)<50*numeric_limits<double>::epsilon());
+    EXPECT_TRUE(abs(frattura2.radius-3)<50*numeric_limits<double>::epsilon());
+
+}
+
+
+TEST(calculateNormalVectorTest, normal)
+{
+    unsigned int id2 = 0;
+    unsigned int num_vertices2 = 5;
+    Eigen::MatrixXd poli2;
+    poli2.resize(3,5);
+    poli2 << 0,2,0,4,7,0,0,1,9,8,0,0,0,0,0;
+    Fracture frattura2(id2,num_vertices2,poli2);
+    frattura2.calculateNormalVector();
+
+    EXPECT_TRUE(abs(0-frattura2.normal[0])<10*numeric_limits<double>::epsilon());
+    EXPECT_TRUE(abs(0-frattura2.normal[1])<10*numeric_limits<double>::epsilon());
+    EXPECT_TRUE(abs(2-frattura2.normal[2])<10*numeric_limits<double>::epsilon());
+
+    EXPECT_TRUE(abs(0-frattura2.plane_d)<10*numeric_limits<double>::epsilon());
+
+}
+
+
+TEST(calculateIntersectionsPointsTest, intersections)
+{
+    unsigned int id = 0;
+    unsigned int num_vertices = 4;
+    Eigen::MatrixXd poli;
+    poli.resize(3,4);
+    poli << 0,2,8,1,0,-2,4,3,0,0,0,0;
+    Fracture frattura(id,num_vertices,poli);
+    Eigen::Vector3d line;
+    line << 1,2,0;
+    Eigen::Vector3d point;
+    point << 0,-1,0;
+    vector<Eigen::Vector3d> intersezioni= Algorithms::calculateIntersectionsPoints(frattura, line, point);
+
+    unsigned int id1 = 1;
+    unsigned int num_vertices1 = 4;
+    Eigen::MatrixXd poli1;
+    poli1.resize(3,4);
+    poli1 << 0,1,1,0,0,0,1,1,0,0,0,0;
+    Fracture frattura1(id1,num_vertices1,poli1);
+    Eigen::Vector3d line1;
+    line1 << 1,0,0;
+    Eigen::Vector3d point1;
+    point1 << 0,-1,0;
+    vector<Eigen::Vector3d> intersezioni1= Algorithms::calculateIntersectionsPoints(frattura1, line1, point1);
+
+    //caso con intersezioni
+    EXPECT_TRUE(abs(0.333333333333333333333333333333333-intersezioni[0][0])<500*numeric_limits<double>::epsilon());
+    EXPECT_TRUE(abs(-0.33333333333333333333333333333333-intersezioni[0][1])<500*numeric_limits<double>::epsilon());
+    EXPECT_TRUE(abs(0-intersezioni[0][2])<500*numeric_limits<double>::epsilon());
+
+    EXPECT_TRUE(abs(2.0769230769231-intersezioni[1][0])<500*numeric_limits<double>::epsilon());
+    EXPECT_TRUE(abs(3.1538461538462-intersezioni[1][1])<500*numeric_limits<double>::epsilon());
+    EXPECT_TRUE(abs(0-intersezioni[1][2])<500*numeric_limits<double>::epsilon());
+
+    //caso senza intersezioni
+    ASSERT_EQ(0,intersezioni1.size());
+}
+
+
+TEST(assignPartitionTest, partitions)
+{
+    vector<Fracture> fractures;
+    fractures.reserve(3);
+
+    array<double, 6> domain_borders = {0, 10, 0, 10, 0, 10};
+
+    const int partitions_number=2;
+
+    //frattura nella prima partizione
+    unsigned int id1 = 0;
+    unsigned int num_vertices1 = 4;
+    Eigen::MatrixXd poli1;
+    poli1.resize(3,4);
+    poli1 << 1,2,1,4,1,0,0,2,1,4,3,2;
+    Fracture frattura1(id1,num_vertices1,poli1);
+    fractures.push_back(frattura1);
+
+    //frattura nell'ultima partizione
+    unsigned int id2 = 1;
+    unsigned int num_vertices2 = 4;
+    Eigen::MatrixXd poli2;
+    poli2.resize(3,4);
+    poli2 << 7,8,9,9,8,8,6,9,9,8,7,7;
+    Fracture frattura2(id2,num_vertices2,poli2);
+    fractures.push_back(frattura2);
+
+    //frattura a cavallo tra le partizioni
+    unsigned int id3 = 2;
+    unsigned int num_vertices3 = 4;
+    Eigen::MatrixXd poli3;
+    poli3.resize(3,4);
+    poli3 << 4,6,5,3,4,6,6,2,4,6,7,1;
+    Fracture frattura3(id3,num_vertices3,poli3);
+    fractures.push_back(frattura3);
+
+    map<int, vector<Fracture>> id_to_fractures=Algorithms::assignPartition(fractures, domain_borders, partitions_number);
+
+    vector<Fracture> vettore_fratture_partizione;
+    vettore_fratture_partizione=id_to_fractures[0];
+    ASSERT_EQ(vettore_fratture_partizione.size(),1);
+    ASSERT_EQ(vettore_fratture_partizione[0].id,frattura3.id);
+
+    vettore_fratture_partizione=id_to_fractures[1];
+    ASSERT_EQ(vettore_fratture_partizione.size(),1);
+    ASSERT_EQ(vettore_fratture_partizione[0].id,frattura1.id);
+
+    vettore_fratture_partizione=id_to_fractures[8];
+    ASSERT_EQ(vettore_fratture_partizione.size(),1);
+    ASSERT_EQ(vettore_fratture_partizione[0].id,frattura2.id);
+
+}
+
+
+TEST(compareSegmentsTest,comparison)
+{
+    vector<Eigen::Vector3d> vec1(2), vec2(2), vec3(2), vec4(2);
+    vec1[0] << 5,8,4;
+    vec1[1] << 1,1,1;
+
+    vec2[0] << 5,8,4;
+    vec2[1] << 1,1,1;
+
+    vec3[0] << 1,1,1;
+    vec3[1] << 5,8,4;
+
+    vec4[0] << 2,3,1;
+    vec4[1] << 5,8,4;
+
+    ASSERT_EQ(true,Utils::compareSegments(vec1,vec2)); //entrambi i vertici coincidono
+    ASSERT_EQ(true,Utils::compareSegments(vec1,vec3)); //vertici invertiti ma con stesse coordinate
+    ASSERT_EQ(false,Utils::compareSegments(vec1,vec4)); //vertici distinti
+
+}
+
+
+TEST(calculateDistinctPointsTest,points)
+{
+    vector<Eigen::Vector3d> a(2), b(2), c(2), d(2);
+    a[0] << 5,8,4;
+    a[1] << 1,1,1;
+
+    b[0] << 5,8,4;
+    b[1] << 1,1,1;
+
+    c[0] << 1,2,1;
+    c[1] << 5,8,4;
+
+    d[0] << 2,3,1;
+    d[1] << 5,4,4;
+
+    ASSERT_EQ(2,Utils::calculateDistinctPoints(a,b).size()); //2 vertici distinti
+    ASSERT_EQ(3,Utils::calculateDistinctPoints(a,c).size()); //3 vertici distinti
+    ASSERT_EQ(4,Utils::calculateDistinctPoints(a,d).size()); //4 vertici distinti
+
+}
+
+
 
 // /*controllo correttezza traccia e correttezza tracce passanti e interne dati due poligoni*/
 //perfeziona cosa dei poligoni messi in senso antiorario qualunque (basta che rispettino il senso di partenza)
@@ -246,10 +430,10 @@ TEST(poligoni_tagliati_by_hand_2,poligoni_tagliati_da_cutPolygonalMesh) //la tra
         for (unsigned int i = 0; i < mesh.VerticesCell2Ds[polygon_id].size(); i ++){
             vertici_da_algoritmo.push_back(mesh.VerticesCell2Ds[polygon_id][i]);
             j += 1;
-            // cout << j << ":  ";
-            // cout << mesh.VerticesCell2Ds[polygon_id][i] << endl;
+            cout << j << ":  ";
+            cout << mesh.VerticesCell2Ds[polygon_id][i] << endl;
         }
-        // cout << endl;
+        cout << endl;
     }
     if (vertici_da_algoritmo.size() != vertici_giusti_1.size()){
         ASSERT_EQ(0,1); //numero di vertici totali differente
