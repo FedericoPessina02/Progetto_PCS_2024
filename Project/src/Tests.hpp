@@ -287,7 +287,7 @@ TEST(zero_caso_interna_interna,norma_della_differenza_tra_punti_intersezione_cor
     EXPECT_EQ(1,h2.internal_traces.size());
 }
 
-TEST(poligoni_tagliati_by_hand,poligoni_tagliati_da_cutPolygonalMesh)
+TEST(poligoni_tagliati_by_hand,poligoni_tagliati_da_cutPolygonBySegment) //cutPolygonbysegment   FUNZIONA
 {
     unsigned int id1 = 0;
     unsigned int num_vertices1 = 4;
@@ -303,9 +303,12 @@ TEST(poligoni_tagliati_by_hand,poligoni_tagliati_da_cutPolygonalMesh)
     //punti traccia:
     Eigen::Vector3d E={0,4,0};
     Eigen::Vector3d F={-1,2,0};
+    // Eigen::Vector3d E={1,4,0}; //CASO TRACCIA PASSANTE PER ANGOLI
+    // Eigen::Vector3d F={-2,2,0};
     Fracture h1 = Fracture(id1,num_vertices1,vertices1);
     //ids:   A = 0;  B = 1;  C = 2;  D = 3;  E = 4;  F = 5;
 
+    //aggiungo punti e vettori nella mesh
     mesh.FractureId = id1;
     for (unsigned int i = 0; i < num_vertices1; i++) {
         mesh.CoordinateCell0Ds.push_back(vertices1.col(i));
@@ -325,24 +328,22 @@ TEST(poligoni_tagliati_by_hand,poligoni_tagliati_da_cutPolygonalMesh)
     unsigned int segment_point_1 = mesh.addPoint(E);
     unsigned int segment_point_2 = mesh.addPoint(F);
     array<unsigned int,2> segment = {segment_point_1,segment_point_2};
-    vector<unsigned int> total_points = {0,1,2,3};
+    vector<unsigned int> total_points = {0,4,1,2,5,3};
+    //vector<unsigned int> total_points = {0,1,2,3}; //CASO TRACCIA PASSANTE PER ANGOLI
     Algorithms::cutPolygonBySegment(h1,mesh,id1,total_points,segment); //ora vogliamo vedere se ha generato i due poligoni che ci aspettiamo
     //vogliamo scorrere sui poligoni e vedere i vertici di tali poligoni
     vector<unsigned int> vertici_giusti = {0,4,5,3,4,1,2,5};
+    //vector<unsigned int> vertici_giusti = {0,1,3,1,2,3}; //CASO TRACCIA PASSANTE PER ANGOLI
     vector<unsigned int> vertici_da_algoritmo;
     vertici_da_algoritmo.reserve(8);
     unsigned int j = 0;
     for (unsigned int& polygon_id: mesh.activatedPolygons) {
-        // cout << polygon_id << " ziopera" <<endl;
-        // cout << endl;
+        cout << polygon_id << endl;
         for (unsigned int i = 0; i < mesh.VerticesCell2Ds[polygon_id].size(); i ++){
-            //cout << vertices1(i) << endl;
-            //cout << mesh.VerticesCell2Ds[polygon_id][i] << endl;
             vertici_da_algoritmo.push_back(mesh.VerticesCell2Ds[polygon_id][i]);
-            j += 1;
-            // cout << j << endl;
+            cout << "  " << mesh.VerticesCell2Ds[polygon_id][i];
         }
-        // cout << endl;
+         cout << endl;
     }
     if (vertici_da_algoritmo.size() != vertici_giusti.size()){
         ASSERT_EQ(0,1); //numero di vertici totali differente
@@ -352,150 +353,129 @@ TEST(poligoni_tagliati_by_hand,poligoni_tagliati_da_cutPolygonalMesh)
     //vertici del primo e secondo poligono rispettivamente coincidenti !
 }
 
-//Il test qua sotto non funziona, mi stampa dei poligoni che hanno piu volte lo stesso vertice -> DA MODIFICARE CUTPOLYGONBYSEGMENT
-// TEST(poligoni_tagliati_by_hand_2,poligoni_tagliati_da_cutPolygonalMesh) //la traccia ha come estremi i vertici del poligono
-// {
-//     //void cutPolygonBySegment(Fracture& fracture, PolygonalMesh& mesh, unsigned int polygonId, array<unsigned int,2> segment, array<unsigned int,2> intersection_starters) {
-//     unsigned int id1 = 0;
-//     unsigned int num_vertices1 = 5;
-//     PolygonalMesh mesh;
-//     MatrixXd vertices1;
-//     vertices1.resize(3,num_vertices1);
-//     //punti poligono:
-//     Eigen::Vector3d A={1,3,1};
-//     Eigen::Vector3d B={2,2,1};
-//     Eigen::Vector3d C={0,0,1};
-//     Eigen::Vector3d D={-1,1,1};
-//     Eigen::Vector3d E={-1,2,1};
-//     vertices1 << 1,2,0,-1,-1, 3,2,0,1,2, 1,1,1,1,1;
-//     //punti traccia:
-//     Eigen::Vector3d F={1,3,1};
-//     Eigen::Vector3d G={0,0,1};
-//     Fracture h1 = Fracture(id1,num_vertices1,vertices1);
-//     //ids:   A = 0;  B = 1;  C = 2;  D = 3;  E = 4;  (F e G sono A e C)
 
-//     //in questo for costruisce piu punti (forse) controllare
-//     mesh.FractureId = id1;
-//     for (unsigned int i = 0; i < num_vertices1; i++) {
-//         mesh.CoordinateCell0Ds.push_back(vertices1.col(i));
-//         mesh.IdCell0Ds.push_back(i);
-//         if (i<num_vertices1-1) {
-//             mesh.IdCell1Ds.push_back(mesh.IdCell1Ds.size());
-//             mesh.VerticesCell1Ds.push_back(array<unsigned int,2> {i, i+1});
-//         } else {
-//             mesh.IdCell1Ds.push_back(mesh.IdCell1Ds.size());
-//             mesh.VerticesCell1Ds.push_back(array<unsigned int,2> {i, 0});
-//         }
-//     }
-//     mesh.IdCell2Ds.push_back(0);
-//     mesh.activatedPolygons.push_back(0);
-//     mesh.VerticesCell2Ds.push_back(mesh.IdCell0Ds);
-//     mesh.EdgesCell2Ds.push_back(mesh.IdCell1Ds);
-//     // unsigned int segment_point_1 = mesh.addPoint(F);
-//     // unsigned int segment_point_2 = mesh.addPoint(G); sono 0 e 2 rispettivamente
-//     //cout << segment_point_1 << "   "  << segment_point_2 <<endl;
-//     array<unsigned int,2> segment = {0,2};
-//     array<unsigned int,2> intersection_starters = {0,2};
-//     Algorithms::cutPolygonBySegment(h1,mesh,id1,segment,intersection_starters); //ora vogliamo vedere se ha generato i due poligoni che ci aspettiamo
-//     //vogliamo scorrere sui poligoni e vedere i vertici di tali poligoni
-//     vector<unsigned int> vertici_giusti_1 = {0,1,2,2,3,4,0};
-//     vector<unsigned int> vertici_giusti_2 = {2,3,4,0,0,1,2}; //entrambi gli ordinamenti sono corretti
-//     vector<unsigned int> vertici_da_algoritmo;
-//     vertici_da_algoritmo.reserve(7);
-//     unsigned int j = 0;
-//     for (unsigned int& polygon_id: mesh.activatedPolygons) {
-//         for (unsigned int i = 0; i < mesh.VerticesCell2Ds[polygon_id].size(); i ++){
-//             vertici_da_algoritmo.push_back(mesh.VerticesCell2Ds[polygon_id][i]);
-//             j += 1;
-//             cout << j << ":  ";
-//             cout << mesh.VerticesCell2Ds[polygon_id][i] << endl;
-//         }
-//         cout << endl;
-//     }
-//     if (vertici_da_algoritmo.size() != vertici_giusti_1.size()){
-//         ASSERT_EQ(0,1); //numero di vertici totali differente
-//     }else{
-//         ASSERT_TRUE(vertici_da_algoritmo == vertici_giusti_1 || vertici_da_algoritmo == vertici_giusti_2);
-//     }
-//     //vertici del primo e secondo poligono rispettivamente coincidenti !
-// }
+//Test su cutMeshBySegment che ragiona solo con tracce passanti su una mesh (poligonale)
+//fornisco un segmento che taglia due poligoni e mi aspetto come risultato 4 poligoni con i punti che li descrivono in senso antiorario
+TEST(poligoni_corretti_e_ordinati_in_senso_antiorario,poligoni_forniti_da_algoritmo){
+    //void Fracture::cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d a, Eigen::Vector3d b)
+    unsigned int id0 = 0; //della frattura
+    unsigned int id1 = 1; //dei sottopoligoni
+    unsigned int id2 = 2;
+    unsigned int num_vertices0 = 4;
+    unsigned int num_vertices1 = 4;
+    unsigned int num_vertices2 = 4;
+    PolygonalMesh mesh;
+    MatrixXd vertices0;
+    MatrixXd vertices1;
+    MatrixXd vertices2;
+    Eigen::Vector3d A={0,0,0}; //0
+    Eigen::Vector3d B={3,0,0}; //4
+    Eigen::Vector3d C={6,0,0}; //1
+    Eigen::Vector3d D={6,3,0}; //2
+    Eigen::Vector3d E={3,3,0}; //5
+    Eigen::Vector3d F={0,3,0}; //3
+    // A C D F lati poligonone
+    vertices0.resize(3,num_vertices0);
+    vertices0 << 0,6,6,0, 0,0,3,3, 0,0,0,0;
 
-// //Test su cutMeshBySegment che ragiona solo con tracce passanti su una mesh (poligonale)
-// //fornisco un segmento che taglia due poligoni e mi aspetto come risultato 4 poligoni con i punti che li descrivono in senso antiorario
-// TEST(poligoni_corretti_e_ordinati_in_senso_antiorario,poligoni_forniti_da_algoritmo){
-//     //void Fracture::cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d a, Eigen::Vector3d b)
-//     unsigned int id0 = 0; //della frattura
-//     unsigned int id1 = 1; //dei sottopoligoni
-//     unsigned int id2 = 2;
-//     unsigned int num_vertices0 = 4;
-//     unsigned int num_vertices1 = 4;
-//     unsigned int num_vertices2 = 4;
-//     PolygonalMesh mesh;
-//     MatrixXd vertices0;
-//     MatrixXd vertices1;
-//     MatrixXd vertices2;
-//     Eigen::Vector3d A={0,0,0}; //0
-//     Eigen::Vector3d B={3,0,0}; //4
-//     Eigen::Vector3d C={6,0,0}; //1
-//     Eigen::Vector3d D={6,3,0}; //2
-//     Eigen::Vector3d E={3,3,0}; //5
-//     Eigen::Vector3d F={0,3,0}; //3
-//     // A C D F lati poligonone
-//     vertices0.resize(3,num_vertices0);
-//     vertices0 << 0,6,6,0, 0,0,3,3, 0,0,0,0;
+    Fracture h0 = Fracture(id0,num_vertices0,vertices0);
+    //la frattura è quella data da h0
+    mesh.FractureId = id0;
+    for (unsigned int i = 0; i < num_vertices0; i++) {
+        mesh.CoordinateCell0Ds.push_back(vertices0.col(i));
+        mesh.IdCell0Ds.push_back(i);
+        if (i<num_vertices0-1) {
+            mesh.IdCell1Ds.push_back(mesh.IdCell1Ds.size());
+            mesh.VerticesCell1Ds.push_back(array<unsigned int,2> {i, i+1});
+        } else {
+            mesh.IdCell1Ds.push_back(mesh.IdCell1Ds.size());
+            mesh.VerticesCell1Ds.push_back(array<unsigned int,2> {i, 0});
+        }
+    }
+    mesh.IdCell2Ds.push_back(0);
+    mesh.VerticesCell2Ds.push_back(mesh.IdCell0Ds);
+    mesh.EdgesCell2Ds.push_back(mesh.IdCell1Ds);
 
-//     Fracture h0 = Fracture(id0,num_vertices0,vertices0);
-//     //la frattura è quella data da h0
-//     mesh.FractureId = id0;
-//     for (unsigned int i = 0; i < num_vertices0; i++) {
-//         mesh.CoordinateCell0Ds.push_back(vertices0.col(i));
-//         mesh.IdCell0Ds.push_back(i);
-//         if (i<num_vertices0-1) {
-//             mesh.IdCell1Ds.push_back(mesh.IdCell1Ds.size());
-//             mesh.VerticesCell1Ds.push_back(array<unsigned int,2> {i, i+1});
-//         } else {
-//             mesh.IdCell1Ds.push_back(mesh.IdCell1Ds.size());
-//             mesh.VerticesCell1Ds.push_back(array<unsigned int,2> {i, 0});
-//         }
-//     }
-//     mesh.IdCell2Ds.push_back(0);
-//     mesh.VerticesCell2Ds.push_back(mesh.IdCell0Ds);
-//     mesh.EdgesCell2Ds.push_back(mesh.IdCell1Ds);
+    //inserimento punti necessari nella mesh
+    mesh.addPoint(B);
+    mesh.addPoint(E);
 
-//     //inserimento punti necessari nella mesh
-//     mesh.addPoint(B);
-//     mesh.addPoint(E);
+    //inserimento lati per poligoni 1 e 2 nella mesh
+    // 1
+    mesh.addEdge(0,4); mesh.addEdge(4,5); mesh.addEdge(5,3); //lati di coordinate 4 5 6
+    //2
+    mesh.addEdge(4,1); mesh.addEdge(2,5); mesh.addEdge(5,4); //lati di coordinate 7 8 9
 
-//     //inserimento lati per poligoni 1 e 2 nella mesh
-//     // 1
-//     mesh.addEdge(0,4); mesh.addEdge(4,5); mesh.addEdge(5,3); //lati di coordinate 4 5 6
-//     //2
-//     mesh.addEdge(4,1); mesh.addEdge(2,5); mesh.addEdge(5,4); //lati di coordinate 7 8 9
+    mesh.IdCell2Ds.push_back(id1);
+    mesh.IdCell2Ds.push_back(id2);
+    //aggiungo punti a IdCell2Ds e anche lati
+    vector<unsigned int> pol1_vertices = {0,4,5,3}; // A B E F
+    vector<unsigned int> pol2_vertices = {4,1,2,5}; // B C D E
+    vector<unsigned int> pol1_edges = {4,5,6,3}; // AB BE EF FA
+    vector<unsigned int> pol2_edges = {7,1,8,9}; // BC CD DE EB
+    mesh.VerticesCell2Ds.push_back(pol1_vertices);
+    mesh.VerticesCell2Ds.push_back(pol2_vertices);
+    mesh.EdgesCell2Ds.push_back(pol1_edges);
+    mesh.EdgesCell2Ds.push_back(pol2_edges);
+    mesh.activatedPolygons.push_back(id1);
+    mesh.activatedPolygons.push_back(id2);
 
-//     mesh.IdCell2Ds.push_back(id1);
-//     mesh.IdCell2Ds.push_back(id2);
-//     //aggiungo punti a IdCell2Ds e anche lati
-//     vector<unsigned int> pol1_vertices = {0,4,5,3}; // A B E F
-//     vector<unsigned int> pol2_vertices = {4,1,2,5}; // B C D E
-//     vector<unsigned int> pol1_edges = {4,5,6,3}; // AB BE EF FA
-//     vector<unsigned int> pol2_edges = {7,1,8,9}; // BC CD DE EB
-//     mesh.VerticesCell2Ds.push_back(pol1_vertices);
-//     mesh.VerticesCell2Ds.push_back(pol2_vertices);
-//     mesh.EdgesCell2Ds.push_back(pol1_edges);
-//     mesh.EdgesCell2Ds.push_back(pol2_edges);
-//     mesh.activatedPolygons.push_back(id1);
-//     mesh.activatedPolygons.push_back(id2);
+    Eigen::Vector3d a={6,2,0};
+    Eigen::Vector3d b = {0,1,0};
+    //Eigen::Vector3d a = {3,3,0}; //CASO TRACCIA PASSANTE PER ANGOLI, sistemare ridimensionamento poligoni post taglio
+    h0.cutMeshBySegment(mesh,a,b);
+    vector<vector<unsigned int>> calculated_vectors; //mi salvo i vettori calcolati
+    for (unsigned int i = 0; i < mesh.activatedPolygons.size(); i++){
+        unsigned int k = mesh.activatedPolygons[i];
+        vector<unsigned int> vi;
+        cout << endl;
+        for (unsigned int j = 0; j < mesh.VerticesCell2Ds[i].size(); j++){
+            vi.push_back(mesh.VerticesCell2Ds[k][j]);
+            cout << " " << mesh.VerticesCell2Ds[k][j];
+        }
+        calculated_vectors.push_back(vi);
+    }
 
-//     Eigen::Vector3d a={6,2,0};
-//     Eigen::Vector3d b={0,1,0};
-
-//     h0.cutMeshBySegment(mesh,a,b);
-//     cout << mesh.activatedPolygons.size() << endl;
-//     for (unsigned int i = 0; i < mesh.activatedPolygons.size(); i++){
-//         cout << mesh.activatedPolygons[i] << ": ";
-//         for (unsigned int j = 0; j < mesh.VerticesCell2Ds[i].size(); j++){
-//             cout << mesh.VerticesCell2Ds[i][j] << "   ";
-//         }
-//         cout << endl;
-//     }
-// }
+    bool flag1 = false; //ora è tempo di controllare se i poligoni sono stati salvati correttamente
+    vector<vector<unsigned int>> true_vectors;
+    vector<unsigned int> v1 = {4,6,7,0,4,6,7};
+    vector<unsigned int> v2 = {4,1,8,6,4,1,8};
+    vector<unsigned int> v3 = {6,8,2,5,6,8,2};
+    vector<unsigned int> v4 = {7,6,5,3,7,6,5};
+    true_vectors.push_back(v1);
+    true_vectors.push_back(v2);
+    true_vectors.push_back(v3);
+    true_vectors.push_back(v4);
+    bool different_number_of_polygons = true;
+    // if (calculated_vectors.size() != (v1.size()+1)/2){
+    //     ASSERT_TRUE(false == different_number_of_polygons);
+    // }
+    for (unsigned int l = 0; l < 4; l++){ //controllo che i poligoni salvati siano quelli che mi aspetto in senso antiorario
+        for (unsigned int i = 0; i < calculated_vectors.size(); i++){
+            cout << endl;
+            for (unsigned int j = 0; j < calculated_vectors[i].size(); j++){
+                //cout << "   " << calculated_vectors[i][j];
+                for (unsigned int k = 0; k < (true_vectors[l].size()+1)/2; k++){
+                    //cout << "calc: " << calculated_vectors[i][k] << "   v1: " << true_vectors[l][k+j] << endl; //a meno di permutazioni
+                    if (calculated_vectors[i][k] != true_vectors[l][k+j]){
+                        flag1 = false;
+                        break;
+                    } else {
+                        flag1 = true;
+                    }
+                }
+                if (flag1 == true){
+                    break;
+                }
+            }
+            if (flag1 == true){
+                break;
+            }
+        }
+        if (flag1 == false){ //se per il primo poligono non ho trovasto corrispondenza nei poligoni calcolati allora ho fallito il test
+            break;
+        }
+    }
+    ASSERT_TRUE(flag1 == true); //se è vero allora tutti i poligoni calcolati sono come me li aspetto (giusti e in senso antiorario)
+}
+//FARE ALTRO ESEMPIO CON TRACCIA CHE TAGLIA I BORDI
