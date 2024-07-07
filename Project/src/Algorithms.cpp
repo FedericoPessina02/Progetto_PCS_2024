@@ -140,8 +140,8 @@ void cutPolygonBySegment(Fracture& fracture, PolygonalMesh& mesh, unsigned int p
     // come prima cosa creo i due vettori che conterranno gli id dei vertici dei due sottopoligoni risultanti
     vector<unsigned int> polygon_a_vertices;
     vector<unsigned int> polygon_b_vertices;
-    unsigned int CUT_ALG = 0; // stabilisce quale algoritmo usare
-    if (CUT_ALG == 0) {
+    unsigned int CUT_ALG = 2; // stabilisce quale algoritmo usare
+    if (CUT_ALG == 1) {
         /* ALGORITMO 1
         Questo algoritmo sfrutta i prodotti vettoriali per stabilire a quale sottopoligono appartengono i vari vertici
         Scorrendo uno ad uno tutti i vertici faccio il prodotto vettoriale tra il segmento di taglio e la congiungente del vertice in questione con un punto del segmento
@@ -165,7 +165,7 @@ void cutPolygonBySegment(Fracture& fracture, PolygonalMesh& mesh, unsigned int p
                 polygon_b_vertices.push_back(vertex_id);
             }
         }
-    } else if (CUT_ALG == 1) {
+    } else if (CUT_ALG == 2) {
         /* ALGORITMO 2
         Questo algoritmo sfrutta la lettura sequenziale del vettore ordinato in senso antiorario dei punti
         parte con l'assegnare i punti al primo sottopoligono, e quando si imbatte in un punto appartenente al segmento di taglio
@@ -259,7 +259,7 @@ void ordinaFract(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh, 
                 vector<pair<int, double>> vect(lunghezze_interne.begin(), lunghezze_interne.end());
 
                 // Ordinamento del vettore di coppie in base ai valori
-                /* usare bubblesort o mergesort */
+                // std::sort sembra essere l'algoritmo più efficiente, in quanto sfrutta un mix di quicksort, heapsort e insertionsort in base al caso
                 sort(vec.begin(), vec.end(), compareByValueDescending);
                 sort(vect.begin(), vect.end(), compareByValueDescending);
 
