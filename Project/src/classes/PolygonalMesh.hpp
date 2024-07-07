@@ -1,6 +1,7 @@
 #pragma once
+#include <iostream>
+#include <vector>
 #include "Eigen/Eigen"
-#include "vector"
 
 using namespace std;
 
@@ -42,5 +43,19 @@ struct PolygonalMesh {
         IdCell1Ds.push_back(new_id);
         VerticesCell1Ds.push_back(array<unsigned int,2> {a, b});
         return new_id;
+    }
+    unsigned int findEdge(unsigned int a, unsigned int b) {
+        for (unsigned int i = 0; i < VerticesCell1Ds.size(); i++) {
+            if ((CoordinateCell0Ds[VerticesCell1Ds[i][0]] - CoordinateCell0Ds[a]).squaredNorm() < 5*numeric_limits<double>::epsilon() &&
+                (CoordinateCell0Ds[VerticesCell1Ds[i][1]] - CoordinateCell0Ds[b]).squaredNorm() < 5*numeric_limits<double>::epsilon()) {
+                return i;
+            }
+            if ((CoordinateCell0Ds[VerticesCell1Ds[i][1]] - CoordinateCell0Ds[a]).squaredNorm() < 5*numeric_limits<double>::epsilon() &&
+                (CoordinateCell0Ds[VerticesCell1Ds[i][0]] - CoordinateCell0Ds[b]).squaredNorm() < 5*numeric_limits<double>::epsilon()) {
+                return i;
+            }
+        }
+        cerr << "Edge not found" << endl;
+        return 0;
     }
 };

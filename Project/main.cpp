@@ -21,6 +21,6 @@ int main(int argc, char **argv)
     vector<PolygonalMesh> polygons = Algorithms::cutPolygonalMesh(id_to_fractures, mesh);
     Utils::ExportSTL("polygonal_mesh.stl", polygons);
     //::testing::InitGoogleTest(&argc,argv);
-    //return RUN_ALL_TESTS();
+    // return RUN_ALL_TESTS();
     return 0;
 }
