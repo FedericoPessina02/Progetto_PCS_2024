@@ -1,6 +1,7 @@
 #pragma once
 #include "Eigen/Eigen"
-#include "vector"
+#include <vector>
+#include <map>
 #include "PolygonalMesh.hpp"
 #include "TracesMesh.hpp"
 
@@ -23,7 +24,7 @@ public:
     void calculateNormalVector();
     void calculateSphere();
     void generateTrace(Fracture& other, TracesMesh& mesh);
-    void cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d direction, Eigen::Vector3d application_point);
+    void cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d& a, Eigen::Vector3d& b, const unordered_map<unsigned int, array<double,2>>& cached_coeffs = unordered_map<unsigned int, array<double,2>>());
     PolygonalMesh generatePolygonalMesh(TracesMesh& traces);
 };
 

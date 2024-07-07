@@ -283,6 +283,10 @@ PolygonalMesh Fracture::generatePolygonalMesh(TracesMesh& traces) {
     //     aventi rispettivamente il coefficiente <= 0 più grande e il coefficiente >= 1 più piccolo
     //     essi corrispondono agli estremi della traccia passante su cui lanciare il taglio
     for (unsigned int& trace_id: internal_traces) {
+        // creo la struttura dati che conterrà le soluzioni dei sistemi lineari già calcolati
+        // unordered_map è tabella hash e come tale ha un tempo di accesso diretto O(1)/O(N) (nel caso peggiore di sole collisioni)
+        // la map tradizionale è implementata con una struttura simile ad un albero AVL, quindi ha tempo di accesso O(logN)
+        unordered_map<unsigned int, array<double,2>> cached_coeffs;
         // trovo l'equazione parametrica della retta che estende la traccia
         Eigen::Vector3d direction = traces.traces_vertices[trace_id][1] - traces.traces_vertices[trace_id][0];
         Eigen::Vector3d application_point = traces.traces_vertices[trace_id][0];
@@ -292,14 +296,18 @@ PolygonalMesh Fracture::generatePolygonalMesh(TracesMesh& traces) {
         for (unsigned int& polygonId: mesh.activatedPolygons) {
             for (unsigned int i = 0; i < mesh.VerticesCell2Ds[polygonId].size(); i++) {
                 // scorro i lati del poligono per cercare i punti di intersezione
-                Eigen::Vector3d a = mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygonId][i]];
+                unsigned int vertex_a_id = mesh.VerticesCell2Ds[polygonId][i];
+                unsigned int vertex_b_id;
+                Eigen::Vector3d a = mesh.CoordinateCell0Ds[vertex_a_id];
                 Eigen::Vector3d b;
                 if (i < mesh.VerticesCell2Ds[polygonId].size() - 1) {
-                    b = mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygonId][i+1]];
+                    vertex_b_id = mesh.VerticesCell2Ds[polygonId][i+1];
+                    b = mesh.CoordinateCell0Ds[vertex_b_id];
                 } else {
-                    b = mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygonId][0]];
+                    vertex_b_id = mesh.VerticesCell2Ds[polygonId][0];
+                    b = mesh.CoordinateCell0Ds[vertex_b_id];
                 }
-                // trovo l'equuazione parametrica associata al lato del poligono
+                // trovo l'equazione parametrica associata al lato del poligono
                 Eigen::Vector3d edge_direction = b-a;
                 Eigen::Vector3d edge_application = a;
                 if (edge_direction.cross(direction).norm() < 5*numeric_limits<double>::epsilon()) {
@@ -318,6 +326,8 @@ PolygonalMesh Fracture::generatePolygonalMesh(TracesMesh& traces) {
                     // se la condizione è rispettata vuol dire che l'intersezione cade dentro il lato e non nella sua estesa
                     // quindi posso considerarlo come intersezione (insieme all'altro coefficiente, associato all'equazione parametrica
                     // della retta su cui giace la traccia)
+                    unsigned int edge_id = mesh.findEdge(vertex_a_id, vertex_b_id);
+                    cached_coeffs[edge_id] = array{parameters(0), parameters(1)}; // memorizzo la soluzione del sistema lineare
                     standard_intersection_points.push_back(point);
                     combination_coeffs.push_back(parameters(1));
                 }
@@ -380,11 +390,12 @@ PolygonalMesh Fracture::generatePolygonalMesh(TracesMesh& traces) {
     return mesh;
 }
 
-void Fracture::cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d a, Eigen::Vector3d b) {
+void Fracture::cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d& a, Eigen::Vector3d& b, const unordered_map<unsigned int, array<double,2>>& cached_coeffs) {
     // taglia la mesh intera lungo un segmento che ha come estremi due punti appartenenti a due lati dentro la mesh
     // cerco tutte le intersezioni e lancio il taglio su tutti i poligoni interessati usando come estremi di taglio il segmento della traccia che
     //      passa lungo quel poligono
     // come prima cosa trovo la retta su cui giace il segmento di taglio
+    bool use_cached_coeffs = true; // se true il programma prova prima a vedere se le soluzioni dei sistemi lineari sono già state calcolate in precedenza
     Eigen::Vector3d direction = b-a;
     Eigen::Vector3d application_point = a;
     vector<unsigned int> to_be_modified_polygons = mesh.activatedPolygons; //id dei poligoni interessati dal taglio
@@ -396,24 +407,38 @@ void Fracture::cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d a, Eigen::V
         // scorro i lati del poligono per cercare i punti di intersezione
         // il codice è analogo a quello contenuto in cutPolygonalMesh
         for (unsigned int i = 0; i < mesh.VerticesCell2Ds[polygonId].size(); i++) {
-            Eigen::Vector3d a = mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygonId][i]];
+            unsigned int vertex_a_id = mesh.VerticesCell2Ds[polygonId][i];
+            unsigned int vertex_b_id;
+            Eigen::Vector3d a = mesh.CoordinateCell0Ds[vertex_a_id];
             Eigen::Vector3d b;
             if (i < mesh.VerticesCell2Ds[polygonId].size() - 1) {
-                b = mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygonId][i+1]];
+                vertex_b_id = mesh.VerticesCell2Ds[polygonId][i+1];
+                b = mesh.CoordinateCell0Ds[vertex_b_id];
             } else {
-                b = mesh.CoordinateCell0Ds[mesh.VerticesCell2Ds[polygonId][0]];
+                vertex_b_id = mesh.VerticesCell2Ds[polygonId][0];
+                b = mesh.CoordinateCell0Ds[vertex_b_id];
             }
             Eigen::Vector3d edge_direction = b-a;
             Eigen::Vector3d edge_application = a;
             if (edge_direction.cross(direction).norm() < 5*numeric_limits<double>::epsilon()) {
                 continue; // il lato è parallelo al segmento non ha senso cercare un'intersezione
             }
+            Eigen::Vector2d parameters;
             Eigen::MatrixXd A;
-            A.resize(3,2);
-            A.col(0) = edge_direction;
-            A.col(1) = -1*direction;
-            Eigen::Vector3d coef = application_point - edge_application;
-            Eigen::Vector2d parameters = A.colPivHouseholderQr().solve(coef);
+
+            unsigned int edge_id = mesh.findEdge(vertex_a_id, vertex_b_id);
+            if (cached_coeffs.find(edge_id) != cached_coeffs.end() && use_cached_coeffs) {
+                // se esiste la chiave associata al lato vuol dire che è già stato risolto il sistema lineare associato (bisogna essere sicuri che sia quello giusto ovviamente...)
+                 // .at() è necessario perché cached_coeffs è dichiarato come const
+                // cached_coeffs è dichiarato come const per permettere di assegnare un valore di default senza una reference (vedere Fracture.hpp)
+                parameters(0) = cached_coeffs.at(edge_id)[0], cached_coeffs.at(edge_id)[1];
+            } else {
+                A.resize(3,2);
+                A.col(0) = edge_direction;
+                A.col(1) = -1*direction;
+                Eigen::Vector3d coef = application_point - edge_application;
+                parameters = A.colPivHouseholderQr().solve(coef);
+            }
             if (-5*numeric_limits<double>::epsilon()<=parameters(0) && parameters(0)<1-5*numeric_limits<double>::epsilon()) {
                 if (-5*numeric_limits<double>::epsilon()<=parameters(1) && parameters(1)<1+5*numeric_limits<double>::epsilon()) {
                     // oltre a verificare che l'intersezione sia propria (ossia che cada dentro il lato e non nella sua estesa)
