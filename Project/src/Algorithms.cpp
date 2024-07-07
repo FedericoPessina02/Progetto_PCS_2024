@@ -1,6 +1,7 @@
 #include "Fracture.hpp"
 #include <iostream>
 #include <fstream>
+#include <thread>
 #include "Eigen/Eigen"
 #include "vector"
 #include "Utils.hpp"
@@ -85,6 +86,9 @@ map<int, vector<Fracture>> assignPartition(vector<Fracture>& fractures, array<do
 }
 
 void cutTracesInsidePartition(vector<Fracture>& fractures, TracesMesh& mesh) {
+    if (fractures.size() == 0) {
+        return;
+    }
     for (unsigned int i = 0; i < fractures.size() - 1; i ++) {
         for (unsigned int j = i+1; j<fractures.size(); j++) {
             Fracture& a = fractures[i];
@@ -120,6 +124,55 @@ void cutTraces(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh) {
             // se sto analizzando le fratture di una partizione ben definita, devo anche confrontarle con le fratture con label 0
             cutTracesOverlapping(id_to_fractures[0], id_to_fractures[id], mesh);
         }
+    }
+}
+
+void cutTracesMultithread(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh) {
+    auto standardCut = [](vector<Fracture>& fractures, TracesMesh& mesh, int re) {
+        cutTracesInsidePartition(fractures, mesh);
+        return 0;
+    };
+    auto overlapCut = [](vector<Fracture>& fractures_a, vector<Fracture>& fractures_b, TracesMesh& mesh, int re) {
+        cutTracesOverlapping(fractures_a, fractures_b, mesh);
+        return 0;
+    };
+
+    vector<thread> processes;
+
+    for (int id_zone = 0; id_zone < id_to_fractures.size() / 4; id_zone++) {
+        processes.clear();
+        for (int i = 0; i < 4; i++) {
+            processes.push_back(thread(standardCut, ref(id_to_fractures[id_zone+i]), ref(mesh), i+1));
+        }
+        for(auto& th : processes){
+            th.join();
+        }
+
+        processes.clear();
+        for (int i = 0; i < 4; i++) {
+            if (id_zone + 1 == 0) {
+                continue; // il caso 0 contro 0 è gia un caso standard trattato in precedenza
+            }
+            processes.push_back(thread(overlapCut, ref(id_to_fractures[0]), ref(id_to_fractures[id_zone+i]), ref(mesh), i+1));
+        }
+        for(auto& th : processes){
+            th.join();
+        }
+    }
+
+    int position = id_to_fractures.size() / 4;
+    int remain = id_to_fractures.size() % 4;
+    processes.clear();
+    for (int i = 0; i < remain; i++) {
+        processes.push_back(thread(standardCut, ref(id_to_fractures[position+i]), ref(mesh), i+1));
+        if (position+i == 0) {
+            continue;
+        }
+        processes.push_back(thread(overlapCut, ref(id_to_fractures[0]), ref(id_to_fractures[position+i]), ref(mesh), i+1));
+    }
+
+    for(auto& th : processes){
+        th.join();
     }
 }
 
