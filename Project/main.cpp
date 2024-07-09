@@ -26,8 +26,8 @@ int main(int argc, char **argv)
     vector<PolygonalMesh> polygons = Algorithms::cutPolygonalMeshMultithread(id_to_fractures, mesh);
     t_end = std::chrono::steady_clock::now();
     std::cout << "polygons: " << std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_begin).count() << endl;
-    // Utils::ExportSTL("polygonal_mesh.stl", polygons);
-    //::testing::InitGoogleTest(&argc,argv);
+    Utils::ExportSTL("polygonal_mesh.stl", polygons);
+    // ::testing::InitGoogleTest(&argc,argv);
     // return RUN_ALL_TESTS();
     return 0;
 }
