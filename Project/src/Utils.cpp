@@ -160,6 +160,7 @@ void Stampa1(string nome_file,TracesMesh& mesh){
 }
 
 void ExportSTL(string nome_file, vector<PolygonalMesh>& mesh_collection) {
+    // sarebbe ideale esportarlo in formato binary per ottimizzare le performance di scrittura ma per quello che serve fare funziona
     ofstream ofs(nome_file);
     if (! ofs.is_open()){
         cerr << "errore di apertura del file di output \n";

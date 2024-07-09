@@ -1,6 +1,7 @@
 #include "Fracture.hpp"
 #include <iostream>
 #include <fstream>
+#include <thread>
 #include "Eigen/Eigen"
 #include "vector"
 #include "Utils.hpp"
@@ -77,7 +78,6 @@ map<int, vector<Fracture>> assignPartition(vector<Fracture>& fractures, array<do
         // la frattura viene aggiunta alla mappa nel vettore associato al suo id
         id_to_fractures[el.partition_id].push_back(el);
     }
-
     // il vettore di fratture iniziali viene cancellato dalla memoria per liberare spazio
     fractures.clear(); // <- rimuovo gli elementi dal vettore
     fractures.shrink_to_fit(); // <- libero la memoria riservata
@@ -85,6 +85,9 @@ map<int, vector<Fracture>> assignPartition(vector<Fracture>& fractures, array<do
 }
 
 void cutTracesInsidePartition(vector<Fracture>& fractures, TracesMesh& mesh) {
+    if (fractures.size() == 0) {
+        return;
+    }
     for (unsigned int i = 0; i < fractures.size() - 1; i ++) {
         for (unsigned int j = i+1; j<fractures.size(); j++) {
             Fracture& a = fractures[i];
@@ -123,13 +126,102 @@ void cutTraces(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh) {
     }
 }
 
+// void cutTracesMultithread(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh) {
+//     auto standardCut = [](vector<Fracture>& fractures, TracesMesh& mesh) {
+//         cutTracesInsidePartition(fractures, mesh);
+//     };
+//     auto overlapCut = [](vector<Fracture>& fractures_a, vector<Fracture>& fractures_b, TracesMesh& mesh) {
+//         cutTracesOverlapping(fractures_a, fractures_b, mesh);
+//     };
+
+//     vector<thread> processes;
+
+//     for (int id_zone = 0; id_zone < id_to_fractures.size() / 4; id_zone++) {
+//         processes.clear();
+//         for (int i = 0; i < 4; i++) {
+//             processes.push_back(thread(standardCut, ref(id_to_fractures[id_zone+i]), ref(mesh)));
+//         }
+//         for(auto& th : processes){
+//             th.join();
+//         }
+
+//         processes.clear();
+//         for (int i = 0; i < 4; i++) {
+//             if (id_zone + 1 == 0) {
+//                 continue; // il caso 0 contro 0 è gia un caso standard trattato in precedenza
+//             }
+//             processes.push_back(thread(overlapCut, ref(id_to_fractures[0]), ref(id_to_fractures[id_zone+i]), ref(mesh)));
+//         }
+//         for(auto& th : processes){
+//             th.join();
+//         }
+//     }
+
+//     int position = id_to_fractures.size() / 4;
+//     int remain = id_to_fractures.size() % 4;
+//     processes.clear();
+//     for (int i = 0; i < remain; i++) {
+//         processes.push_back(thread(standardCut, ref(id_to_fractures[position+i]), ref(mesh)));
+//         if (position+i == 0) {
+//             continue;
+//         }
+//         processes.push_back(thread(overlapCut, ref(id_to_fractures[0]), ref(id_to_fractures[position+i]), ref(mesh)));
+//     }
+
+//     for(auto& th : processes){
+//         th.join();
+//     }
+// }
+
 vector<PolygonalMesh> cutPolygonalMesh(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& traces_mesh) {
     // funzione di smistamente per avviare il taglio delle mesh poligonali associate a ogni frattura
     // successivamente le memorizza nel vettore di output
     vector<PolygonalMesh> output;
-    for (unsigned int id = 0; id < id_to_fractures.size(); id++) {
-        for (Fracture& el: id_to_fractures[id]) {
+    for (unsigned int fracture_id = 0; fracture_id < id_to_fractures.size(); fracture_id++) {
+        for (Fracture& el: id_to_fractures[fracture_id]) {
             output.push_back(el.generatePolygonalMesh(traces_mesh));
+        }
+    }
+    return output;
+}
+
+vector<PolygonalMesh> cutPolygonalMeshMultithread(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& traces_mesh) {
+    // lambda function da chiamare nei thread
+    auto createMesh = [](vector<PolygonalMesh>& output, Fracture& fracture, TracesMesh& mesh) {
+        output.push_back(fracture.generatePolygonalMesh(mesh));
+    };
+
+    // vettore contenente le mesh generate
+    vector<PolygonalMesh> output;
+    // vettore contenente i thread aperti (sono al massimo 4)
+    vector<thread> processes;
+
+    // le mesh vengono calcolate a gruppi di 4, uno per thread
+    // il risultato è analogo a cutPolygonalMesh, ma ne vengono eseguiti 4 in parallelo (i calcoli sono distinti non ci sono problemi di sincronizzazione)
+    for (unsigned int fracture_id = 0; fracture_id < id_to_fractures.size(); fracture_id++) {
+        for (int id_zone = 0; id_zone < id_to_fractures[fracture_id].size() / 4; id_zone++) {
+            // svuoto il vettore contenente i thread
+            processes.clear();
+            // avvio i 4 thread assegnando ad ognuno una frattura da tagliare
+            for (int i = 0; i < 4; i++) {
+                processes.push_back(thread(createMesh, ref(output), ref(id_to_fractures[fracture_id][id_zone+i]), ref(traces_mesh)));
+            }
+            // aspetto che tutti e 4 abbiano finito prima di ripetere il processo
+            for(auto& th : processes){
+                th.join();
+            }
+        }
+
+        // il codice è analogo a prima ma si occupa delle ultime fratture (se il totale non è un multiplo di 4 ne processa 1/2/3)
+        int position = id_to_fractures[fracture_id].size() / 4;
+        int remain = id_to_fractures[fracture_id].size() % 4;
+        processes.clear();
+        for (int i = 0; i < remain; i++) {
+            processes.push_back(thread(createMesh, ref(output), ref(id_to_fractures[fracture_id][position+i]), ref(traces_mesh)));
+        }
+
+        for(auto& th : processes){
+            th.join();
         }
     }
     return output;

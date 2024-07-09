@@ -432,7 +432,8 @@ void Fracture::cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d& a, Eigen::
                 // se esiste la chiave associata al lato vuol dire che è già stato risolto il sistema lineare associato (bisogna essere sicuri che sia quello giusto ovviamente...)
                  // .at() è necessario perché cached_coeffs è dichiarato come const
                 // cached_coeffs è dichiarato come const per permettere di assegnare un valore di default senza una reference (vedere Fracture.hpp)
-                parameters(0) = cached_coeffs.at(edge_id)[0], cached_coeffs.at(edge_id)[1];
+                parameters(0) = cached_coeffs.at(edge_id)[0];
+                parameters(1) = cached_coeffs.at(edge_id)[1];
             } else {
                 A.resize(3,2);
                 A.col(0) = edge_direction;
