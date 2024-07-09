@@ -78,7 +78,6 @@ map<int, vector<Fracture>> assignPartition(vector<Fracture>& fractures, array<do
         // la frattura viene aggiunta alla mappa nel vettore associato al suo id
         id_to_fractures[el.partition_id].push_back(el);
     }
-
     // il vettore di fratture iniziali viene cancellato dalla memoria per liberare spazio
     fractures.clear(); // <- rimuovo gli elementi dal vettore
     fractures.shrink_to_fit(); // <- libero la memoria riservata
@@ -128,13 +127,11 @@ void cutTraces(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh) {
 }
 
 void cutTracesMultithread(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh) {
-    auto standardCut = [](vector<Fracture>& fractures, TracesMesh& mesh, int re) {
+    auto standardCut = [](vector<Fracture>& fractures, TracesMesh& mesh) {
         cutTracesInsidePartition(fractures, mesh);
-        return 0;
     };
-    auto overlapCut = [](vector<Fracture>& fractures_a, vector<Fracture>& fractures_b, TracesMesh& mesh, int re) {
+    auto overlapCut = [](vector<Fracture>& fractures_a, vector<Fracture>& fractures_b, TracesMesh& mesh) {
         cutTracesOverlapping(fractures_a, fractures_b, mesh);
-        return 0;
     };
 
     vector<thread> processes;
@@ -142,7 +139,7 @@ void cutTracesMultithread(map<int, vector<Fracture>>& id_to_fractures, TracesMes
     for (int id_zone = 0; id_zone < id_to_fractures.size() / 4; id_zone++) {
         processes.clear();
         for (int i = 0; i < 4; i++) {
-            processes.push_back(thread(standardCut, ref(id_to_fractures[id_zone+i]), ref(mesh), i+1));
+            processes.push_back(thread(standardCut, ref(id_to_fractures[id_zone+i]), ref(mesh)));
         }
         for(auto& th : processes){
             th.join();
@@ -153,7 +150,7 @@ void cutTracesMultithread(map<int, vector<Fracture>>& id_to_fractures, TracesMes
             if (id_zone + 1 == 0) {
                 continue; // il caso 0 contro 0 è gia un caso standard trattato in precedenza
             }
-            processes.push_back(thread(overlapCut, ref(id_to_fractures[0]), ref(id_to_fractures[id_zone+i]), ref(mesh), i+1));
+            processes.push_back(thread(overlapCut, ref(id_to_fractures[0]), ref(id_to_fractures[id_zone+i]), ref(mesh)));
         }
         for(auto& th : processes){
             th.join();
@@ -164,11 +161,11 @@ void cutTracesMultithread(map<int, vector<Fracture>>& id_to_fractures, TracesMes
     int remain = id_to_fractures.size() % 4;
     processes.clear();
     for (int i = 0; i < remain; i++) {
-        processes.push_back(thread(standardCut, ref(id_to_fractures[position+i]), ref(mesh), i+1));
+        processes.push_back(thread(standardCut, ref(id_to_fractures[position+i]), ref(mesh)));
         if (position+i == 0) {
             continue;
         }
-        processes.push_back(thread(overlapCut, ref(id_to_fractures[0]), ref(id_to_fractures[position+i]), ref(mesh), i+1));
+        processes.push_back(thread(overlapCut, ref(id_to_fractures[0]), ref(id_to_fractures[position+i]), ref(mesh)));
     }
 
     for(auto& th : processes){
@@ -183,6 +180,39 @@ vector<PolygonalMesh> cutPolygonalMesh(map<int, vector<Fracture>>& id_to_fractur
     for (unsigned int id = 0; id < id_to_fractures.size(); id++) {
         for (Fracture& el: id_to_fractures[id]) {
             output.push_back(el.generatePolygonalMesh(traces_mesh));
+        }
+    }
+    return output;
+}
+
+vector<PolygonalMesh> cutPolygonalMeshMultithread(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& traces_mesh) {
+    auto createMesh = [](vector<PolygonalMesh>& output, Fracture& fracture, TracesMesh& mesh) {
+        output.push_back(fracture.generatePolygonalMesh(mesh));
+    };
+
+    vector<PolygonalMesh> output;
+    vector<thread> processes;
+
+    for (unsigned int id = 0; id < id_to_fractures.size(); id++) {
+        for (int id_zone = 0; id_zone < id_to_fractures[id].size() / 4; id_zone++) {
+            processes.clear();
+            for (int i = 0; i < 4; i++) {
+                processes.push_back(thread(createMesh, ref(output), ref(id_to_fractures[id][id_zone+i]), ref(traces_mesh)));
+            }
+            for(auto& th : processes){
+                th.join();
+            }
+        }
+
+        int position = id_to_fractures[id].size() / 4;
+        int remain = id_to_fractures[id].size() % 4;
+        processes.clear();
+        for (int i = 0; i < remain; i++) {
+            processes.push_back(thread(createMesh, ref(output), ref(id_to_fractures[id][position+i]), ref(traces_mesh)));
+        }
+
+        for(auto& th : processes){
+            th.join();
         }
     }
     return output;
