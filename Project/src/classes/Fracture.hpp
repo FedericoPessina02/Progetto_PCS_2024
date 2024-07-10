@@ -7,8 +7,7 @@
 
 using namespace std;
 
-class Fracture {
-public:
+struct Fracture {
     unsigned int id;
     unsigned int num_vertices;
     unsigned int partition_id = 0; //partizione dello spazio globale in cui è contenuta la frattura
@@ -24,7 +23,7 @@ public:
     void calculateNormalVector();
     void calculateSphere();
     void generateTrace(Fracture& other, TracesMesh& mesh);
-    void cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d& a, Eigen::Vector3d& b, const unordered_map<unsigned int, array<double,2>>& cached_coeffs = unordered_map<unsigned int, array<double,2>>());
+    void cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d& a, Eigen::Vector3d& b, const map<unsigned int, Eigen::Vector2d>& cached_coeffs = map<unsigned int, Eigen::Vector2d>());
     PolygonalMesh generatePolygonalMesh(TracesMesh& traces);
 };
 

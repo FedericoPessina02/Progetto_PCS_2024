@@ -17,7 +17,7 @@ vector<Eigen::Vector3d> calculateDistinctPoints(vector<Eigen::Vector3d>& a, vect
     result.push_back(a[0]);
     result.push_back(a[1]);
     for (const Eigen::Vector3d& b_el : b) {
-            if ((a[0]-b_el).norm() >= 8*numeric_limits<double>::epsilon() && (a[1]-b_el).norm() >= 8*numeric_limits<double>::epsilon()) {
+            if ((a[0]-b_el).norm() >= tol_coeff*numeric_limits<double>::epsilon() && (a[1]-b_el).norm() >= tol_coeff*numeric_limits<double>::epsilon()) {
                 result.push_back(b_el);
             }
         }
@@ -26,10 +26,10 @@ vector<Eigen::Vector3d> calculateDistinctPoints(vector<Eigen::Vector3d>& a, vect
 
 bool compareSegments(vector<Eigen::Vector3d>& a, vector<Eigen::Vector3d>& b) {
     // verifico se i due segmenti sono in realtà lo stesso a meno di permutazione degli elementi
-    if ((a[0]-b[0]).squaredNorm() < 10*numeric_limits<double>::epsilon() && (a[1]-b[1]).squaredNorm() < 10*numeric_limits<double>::epsilon()) {
+    if ((a[0]-b[0]).squaredNorm() < tol_coeff*numeric_limits<double>::epsilon() && (a[1]-b[1]).squaredNorm() < tol_coeff*numeric_limits<double>::epsilon()) {
         return true;
     }
-    if ((a[0]-b[1]).squaredNorm() < 10*numeric_limits<double>::epsilon() && (a[1]-b[0]).squaredNorm() < 10*numeric_limits<double>::epsilon()) {
+    if ((a[0]-b[1]).squaredNorm() < tol_coeff*numeric_limits<double>::epsilon() && (a[1]-b[0]).squaredNorm() < tol_coeff*numeric_limits<double>::epsilon()) {
         return true;
     }
     return false;
@@ -186,6 +186,67 @@ void ExportSTL(string nome_file, vector<PolygonalMesh>& mesh_collection) {
     }
     ofs << "endsolid" << endl;
     ofs.close();
+}
+
+void Merge(vector<pair<int, double>>& v,
+           const unsigned int& sx,
+           const unsigned int& cx,
+           const unsigned int& dx){
+    unsigned int i = sx;
+    unsigned int j = cx + 1;
+    vector<pair<int, double>> b;
+    b.reserve(dx - sx + 1);
+    while( i <= cx && j <= dx) {
+        if (v[i].second <= v[j].second)
+            b.push_back(v[i++]);
+        else
+            b.push_back(v[j++]);
+    }
+    if (i <= cx)
+        b.insert(b.end(), v.begin() + i, v.begin() + cx + 1);
+    if ( j <= dx)
+        b.insert(b.end(), v.begin() + j, v.begin() + dx + 1);
+
+    copy(b.begin(), b.end(), v.begin() + sx);
+
+}
+
+void MergeSort(vector<pair<int, double>>& v,
+               const unsigned int& sx,
+               const unsigned int& dx){
+    if (sx < dx) {
+        unsigned int cx = (sx + dx) / 2;
+        MergeSort(v, sx, cx);
+        MergeSort(v, cx + 1, dx);
+
+        Merge(v, sx, cx, dx);
+    }
+}
+
+void MergeSort(vector<pair<int, double>>& v){
+    if (v.size() == 0) {
+        return;
+    }
+    MergeSort(v, 0, v.size()-1);
+}
+
+void BubbleSort(std::vector<pair<int, double>>& data)
+{
+    size_t rem_size = data.size();
+    size_t last_seen = rem_size;
+    bool swapped = true;
+
+    while (swapped) {
+        swapped = false;
+        for (size_t i = 1; i < rem_size; i++) {
+            if (data[i-1].second > data[i].second) {
+                std::swap(data[i-1], data[i]);
+                swapped = true;
+                last_seen = i;
+            }
+        }
+        rem_size = last_seen;
+    }
 }
 
 }

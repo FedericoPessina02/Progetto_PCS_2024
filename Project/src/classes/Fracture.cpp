@@ -69,7 +69,7 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
     A.row(0) = normal;
     A.row(1) = other.normal;
     A.row(2) = t;
-    if (abs(A.determinant()) < 5*numeric_limits<double>::epsilon()) {
+    if (abs(A.determinant()) < Utils::tol_coeff*numeric_limits<double>::epsilon()) {
         // la matrice associata al sistema è singolare, quindi il sistema non è determinato (ossia le due fratture sono parallele nello spazio)
         return;
     }
@@ -87,7 +87,6 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
     if (punti_1.size()+punti_2.size()!=4) {
         if (punti_1.size()+punti_2.size()>4) {
             cerr << "More than 4 points of intersections";
-            return;
         }
         return;
     }
@@ -101,8 +100,7 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
     if (punti_distinti.size() == 2) {
         // se sono esattamente 2, allora tali punti coincideranno (a due a due) su entrambe le fratture e la traccia sarà passante per entrambe
         // in questo caso ho la garanzia che la traccia esiste e non vi possono essere casi degeneri
-        array<Eigen::Vector3d, 2> punti_distinti_array; //punti di intersezione tra le due fratture
-        copy_n(make_move_iterator(punti_distinti.begin()), 2, punti_distinti_array.begin());
+        array<Eigen::Vector3d, 2> punti_distinti_array = {punti_distinti[0], punti_distinti[1]}; //punti di intersezione tra le due fratture
         array<unsigned int, 2> fractures_id = {id, other.id};
         mesh.addTrace(trace_id, punti_distinti_array, fractures_id);
         passant_traces.push_back(trace_id); //aggiungo l'id della traccia nel vettore delle tracce passanti (per la frattura su cui si sta lavorando)
@@ -122,12 +120,12 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
         for (Eigen::Vector3d& i: punti_distinti) {
             unsigned int counter = 0;
             for (Eigen::Vector3d& a: punti_1) {
-                if ((i-a).squaredNorm() < 8*numeric_limits<double>::epsilon()) {
+                if ((i-a).squaredNorm() < Utils::tol_coeff*numeric_limits<double>::epsilon()) {
                     counter += 1;
                 }
             }
             for (Eigen::Vector3d& a: punti_2) {
-                if ((i-a).squaredNorm() < 8*numeric_limits<double>::epsilon()) {
+                if ((i-a).squaredNorm() < Utils::tol_coeff*numeric_limits<double>::epsilon()) {
                     counter += 1;
                 }
             }
@@ -157,7 +155,7 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
         //verifico la distanza minore a quale frattura appartenga, e salvo di conseguenza la traccia come passante o interna
         //NB sarà o passante nella frattura studiata e interna in quella passata in input, o viceversa
         double punti_1_length = (punti_1[0] - punti_1[1]).squaredNorm();
-        if (abs(min_length-punti_1_length) < 8*numeric_limits<double>::epsilon()) {
+        if (abs(min_length-punti_1_length) < Utils::tol_coeff*numeric_limits<double>::epsilon()) {
             passant_traces.push_back(trace_id);
             other.internal_traces.push_back(trace_id);
         } else {
@@ -170,11 +168,11 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
     // il caso generale a 4 punti richiede di ordinare i punti e di studiare l'appartenenza dei vari punti ai poligoni
     // come prima cosa individuo un punto estremale (salvato in estremo) e memorizzo la referenza a quale poligoni appartiene
     //     so per certo che appartiene a un solo poligono perché altrimenti non starei usando questo algoritmo
-    vector<Eigen::Vector3d>* punti_ptr = &punti_1;
+    vector<Eigen::Vector3d> punti_ptr = punti_1;
     double distanza = 0;
     Eigen::Vector3d estremo;
-    for (unsigned int i = 0; i < punti_1.size(); i++) {
-        for (unsigned int j = 0; j < punti_2.size(); j++) {
+    for (unsigned int i = 0; i < 2; i++) {
+        for (unsigned int j = 0; j < 2; j++) {
             if ((punti_1[i]-punti_2[j]).squaredNorm() > distanza) {
                 estremo = punti_1[i];
                 distanza = (punti_1[i]-punti_2[j]).squaredNorm();
@@ -183,7 +181,7 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
     }
     if ((punti_2[0]-punti_2[1]).squaredNorm() > distanza) {
         estremo = punti_2[0];
-        punti_ptr = &punti_2;
+        punti_ptr = punti_2;
     }
 
     // a partire il punto estremale salvo in punto_vicini il punto a lui più vicino
@@ -202,10 +200,10 @@ void Fracture::generateTrace(Fracture& other, TracesMesh& mesh) {
     // controllo il caso degenere di due fratture separate con segmento di intersezione esterno ad entrambi i poligoni
     // se punto_vicini appartiene alla coppia di punti a cui appartiene anche il punto estremale che sto considerando ricado nel caso degenere:
     //      le due fratture non si stanno realmente intersecando
-    if ((punti_ptr->operator[](0)-punto_vicini).squaredNorm() < 8*numeric_limits<double>::epsilon()) {
+    if ((punti_ptr[0]-punto_vicini).squaredNorm() < Utils::tol_coeff*numeric_limits<double>::epsilon()) {
         return;
     }
-    if ((punti_ptr->operator[](1)-punto_vicini).squaredNorm() < 8*numeric_limits<double>::epsilon()) {
+    if ((punti_ptr[1]-punto_vicini).squaredNorm() < Utils::tol_coeff*numeric_limits<double>::epsilon()) {
         return;
     }
 
@@ -287,7 +285,7 @@ PolygonalMesh Fracture::generatePolygonalMesh(TracesMesh& traces) {
         // creo la struttura dati che conterrà le soluzioni dei sistemi lineari già calcolati
         // unordered_map è tabella hash e come tale ha un tempo di accesso diretto O(1)/O(N) (nel caso peggiore di sole collisioni)
         // la map tradizionale è implementata con una struttura simile ad un albero AVL, quindi ha tempo di accesso O(logN)
-        unordered_map<unsigned int, array<double,2>> cached_coeffs;
+        map<unsigned int, Eigen::Vector2d> cached_coeffs;
         // trovo l'equazione parametrica della retta che estende la traccia
         Eigen::Vector3d direction = traces.traces_vertices[trace_id][1] - traces.traces_vertices[trace_id][0];
         Eigen::Vector3d application_point = traces.traces_vertices[trace_id][0];
@@ -311,7 +309,7 @@ PolygonalMesh Fracture::generatePolygonalMesh(TracesMesh& traces) {
                 // trovo l'equazione parametrica associata al lato del poligono
                 Eigen::Vector3d edge_direction = b-a;
                 Eigen::Vector3d edge_application = a;
-                if (edge_direction.cross(direction).norm() < 5*numeric_limits<double>::epsilon()) {
+                if (edge_direction.cross(direction).norm() < 100*numeric_limits<double>::epsilon()) {
                     // il lato è parallelo al segmento, non ha senso cercare una possibile intersezione
                     continue;
                 }
@@ -323,12 +321,12 @@ PolygonalMesh Fracture::generatePolygonalMesh(TracesMesh& traces) {
                 Eigen::Vector3d coef = application_point - edge_application;
                 Eigen::Vector2d parameters = A.colPivHouseholderQr().solve(coef);
                 Eigen::Vector3d point = a + parameters(0)*edge_direction;
-                if (-5*numeric_limits<double>::epsilon()<=parameters(0) && parameters(0)<1+5*numeric_limits<double>::epsilon()) {
+                if (-1*Utils::tol_coeff*numeric_limits<double>::epsilon()<=parameters(0) && parameters(0)<1+Utils::tol_coeff*numeric_limits<double>::epsilon()) {
                     // se la condizione è rispettata vuol dire che l'intersezione cade dentro il lato e non nella sua estesa
                     // quindi posso considerarlo come intersezione (insieme all'altro coefficiente, associato all'equazione parametrica
                     // della retta su cui giace la traccia)
                     unsigned int edge_id = mesh.findEdge(vertex_a_id, vertex_b_id);
-                    cached_coeffs[edge_id] = array{parameters(0), parameters(1)}; // memorizzo la soluzione del sistema lineare
+                    cached_coeffs[edge_id] = parameters; // memorizzo la soluzione del sistema lineare
                     standard_intersection_points.push_back(point);
                     combination_coeffs.push_back(parameters(1));
                 }
@@ -391,7 +389,7 @@ PolygonalMesh Fracture::generatePolygonalMesh(TracesMesh& traces) {
     return mesh;
 }
 
-void Fracture::cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d& a, Eigen::Vector3d& b, const unordered_map<unsigned int, array<double,2>>& cached_coeffs) {
+void Fracture::cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d& a, Eigen::Vector3d& b, const map<unsigned int, Eigen::Vector2d>& cached_coeffs) {
     // taglia la mesh intera lungo un segmento che ha come estremi due punti appartenenti a due lati dentro la mesh
     // cerco tutte le intersezioni e lancio il taglio su tutti i poligoni interessati usando come estremi di taglio il segmento della traccia che
     //      passa lungo quel poligono
@@ -421,7 +419,7 @@ void Fracture::cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d& a, Eigen::
             }
             Eigen::Vector3d edge_direction = b-a;
             Eigen::Vector3d edge_application = a;
-            if (edge_direction.cross(direction).norm() < 5*numeric_limits<double>::epsilon()) {
+            if (edge_direction.cross(direction).norm() < Utils::tol_coeff*numeric_limits<double>::epsilon()) {
                 continue; // il lato è parallelo al segmento non ha senso cercare un'intersezione
             }
             Eigen::Vector2d parameters;
@@ -432,8 +430,7 @@ void Fracture::cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d& a, Eigen::
                 // se esiste la chiave associata al lato vuol dire che è già stato risolto il sistema lineare associato (bisogna essere sicuri che sia quello giusto ovviamente...)
                  // .at() è necessario perché cached_coeffs è dichiarato come const
                 // cached_coeffs è dichiarato come const per permettere di assegnare un valore di default senza una reference (vedere Fracture.hpp)
-                parameters(0) = cached_coeffs.at(edge_id)[0];
-                parameters(1) = cached_coeffs.at(edge_id)[1];
+                parameters = cached_coeffs.at(edge_id);
             } else {
                 A.resize(3,2);
                 A.col(0) = edge_direction;
@@ -441,8 +438,8 @@ void Fracture::cutMeshBySegment(PolygonalMesh& mesh, Eigen::Vector3d& a, Eigen::
                 Eigen::Vector3d coef = application_point - edge_application;
                 parameters = A.colPivHouseholderQr().solve(coef);
             }
-            if (-5*numeric_limits<double>::epsilon()<=parameters(0) && parameters(0)<1-5*numeric_limits<double>::epsilon()) {
-                if (-5*numeric_limits<double>::epsilon()<=parameters(1) && parameters(1)<1+5*numeric_limits<double>::epsilon()) {
+            if (-Utils::tol_coeff*numeric_limits<double>::epsilon()<=parameters(0) && parameters(0)<1-Utils::tol_coeff*numeric_limits<double>::epsilon()) {
+                if (-Utils::tol_coeff*numeric_limits<double>::epsilon()<=parameters(1) && parameters(1)<1+Utils::tol_coeff*numeric_limits<double>::epsilon()) {
                     // oltre a verificare che l'intersezione sia propria (ossia che cada dentro il lato e non nella sua estesa)
                     // devo anche assicurarmi che si verifichi la stessa cosa per il segmento di taglio (ossia che vada a tagliare fuori)
                     // questo controllo è necessario perché se non ci fosse vanificherebbe tutto il lavoro fatto per minimizzare l'estensione delle tracce interne

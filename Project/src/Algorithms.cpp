@@ -23,7 +23,7 @@ vector<Eigen::Vector3d> calculateIntersectionsPoints(Fracture& fracture, Eigen::
             lato = fracture.vertices.col(i+1) - fracture.vertices.col(i);
         }
         //verifica che il lato non sia parallelo alla traccia (in caso contrario, non c'è intersezione)
-        if (lato.cross(line).norm() < 5*numeric_limits<double>::epsilon()) {
+        if (lato.cross(line).norm() < Utils::tol_coeff*numeric_limits<double>::epsilon()) {
             continue;
         }
         //risoluzione del sistema lineare mediante la fattorizzazione QR (utile per matrici generiche mxn, avente il minor costo
@@ -34,7 +34,7 @@ vector<Eigen::Vector3d> calculateIntersectionsPoints(Fracture& fracture, Eigen::
         A.col(1) = -1*line;
         Eigen::Vector3d b = point - fracture.vertices.col(i);
         Eigen::Vector2d parameters = A.colPivHouseholderQr().solve(b);
-        if (-10*numeric_limits<double>::epsilon()<parameters(0) && parameters(0)<1-10*numeric_limits<double>::epsilon()) {
+        if (-Utils::tol_coeff*numeric_limits<double>::epsilon()<parameters(0) && parameters(0)<1-Utils::tol_coeff*numeric_limits<double>::epsilon()) {
             // verifico che l'intersezione con il lato sia una combinazione convessa, ossia che effettivamente il punto di intersezione
             // cada all'interno del lato
             Eigen::Vector3d point = fracture.vertices.col(i) + parameters(0)*lato;
@@ -204,7 +204,7 @@ vector<PolygonalMesh> cutPolygonalMeshMultithread(map<int, vector<Fracture>>& id
             processes.clear();
             // avvio i 4 thread assegnando ad ognuno una frattura da tagliare
             for (int i = 0; i < 4; i++) {
-                processes.push_back(thread(createMesh, ref(output), ref(id_to_fractures[fracture_id][id_zone+i]), ref(traces_mesh)));
+                processes.push_back(thread(createMesh, ref(output), ref(id_to_fractures[fracture_id][4*id_zone+i]), ref(traces_mesh)));
             }
             // aspetto che tutti e 4 abbiano finito prima di ripetere il processo
             for(auto& th : processes){
@@ -213,8 +213,8 @@ vector<PolygonalMesh> cutPolygonalMeshMultithread(map<int, vector<Fracture>>& id
         }
 
         // il codice è analogo a prima ma si occupa delle ultime fratture (se il totale non è un multiplo di 4 ne processa 1/2/3)
-        int position = id_to_fractures[fracture_id].size() / 4;
         int remain = id_to_fractures[fracture_id].size() % 4;
+        int position = id_to_fractures[fracture_id].size() - remain;
         processes.clear();
         for (int i = 0; i < remain; i++) {
             processes.push_back(thread(createMesh, ref(output), ref(id_to_fractures[fracture_id][position+i]), ref(traces_mesh)));
@@ -251,9 +251,9 @@ void cutPolygonBySegment(Fracture& fracture, PolygonalMesh& mesh, unsigned int p
             double evaluation_coef = fracture.normal.dot(product_line) + fracture.plane_d;
             // se sotituisco il prodotto vettoriale nell'equazione planare posso discriminare a quale sottopoligono appartiene il punto guardando il segno
             // la scelta di associare al primo sottopoligono i valori positivi è totalmente arbitraria...
-            if (evaluation_coef > 5*numeric_limits<double>::epsilon()) {
+            if (evaluation_coef > Utils::tol_coeff*numeric_limits<double>::epsilon()) {
                 polygon_a_vertices.push_back(vertex_id);
-            } else if(evaluation_coef < -5*numeric_limits<double>::epsilon()) {
+            } else if(evaluation_coef < -Utils::tol_coeff*numeric_limits<double>::epsilon()) {
                 polygon_b_vertices.push_back(vertex_id);
             }
         }
@@ -351,9 +351,13 @@ void ordinaFract(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh, 
                 vector<pair<int, double>> vect(lunghezze_interne.begin(), lunghezze_interne.end());
 
                 // Ordinamento del vettore di coppie in base ai valori
-                // std::sort sembra essere l'algoritmo più efficiente, in quanto sfrutta un mix di quicksort, heapsort e insertionsort in base al caso
-                sort(vec.begin(), vec.end(), compareByValueDescending);
-                sort(vect.begin(), vect.end(), compareByValueDescending);
+                // BubbleSort sembra vincere? Alla fine gli insiemi da ordinare sono sempre relativamente piccoli...
+                // sort(vec.begin(), vec.end(), compareByValueDescending);
+                // sort(vect.begin(), vect.end(), compareByValueDescending);
+                // Utils::MergeSort(vec);
+                // Utils::MergeSort(vect);
+                Utils::BubbleSort(vec);
+                Utils::BubbleSort(vect);
 
                 for (const auto& pair : vect) {
                     ofs<< pair.first <<" ; ";

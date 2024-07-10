@@ -27,8 +27,8 @@ TEST(calculateSphereTest,radius)
     frattura2.calculateSphere();
 
 
-    EXPECT_TRUE(abs(frattura.radius-0.5)<50*numeric_limits<double>::epsilon());
-    EXPECT_TRUE(abs(frattura2.radius-3)<50*numeric_limits<double>::epsilon());
+    EXPECT_TRUE(abs(frattura.radius-0.5)<Utils::tol_coeff*numeric_limits<double>::epsilon());
+    EXPECT_TRUE(abs(frattura2.radius-3)<Utils::tol_coeff*numeric_limits<double>::epsilon());
 
 }
 
@@ -43,11 +43,11 @@ TEST(calculateNormalVectorTest, normal)
     Fracture frattura2(id2,num_vertices2,poli2);
     frattura2.calculateNormalVector();
 
-    EXPECT_TRUE(abs(0-frattura2.normal[0])<10*numeric_limits<double>::epsilon());
-    EXPECT_TRUE(abs(0-frattura2.normal[1])<10*numeric_limits<double>::epsilon());
-    EXPECT_TRUE(abs(2-frattura2.normal[2])<10*numeric_limits<double>::epsilon());
+    EXPECT_TRUE(abs(0-frattura2.normal[0])<Utils::tol_coeff*numeric_limits<double>::epsilon());
+    EXPECT_TRUE(abs(0-frattura2.normal[1])<Utils::tol_coeff*numeric_limits<double>::epsilon());
+    EXPECT_TRUE(abs(2-frattura2.normal[2])<Utils::tol_coeff*numeric_limits<double>::epsilon());
 
-    EXPECT_TRUE(abs(0-frattura2.plane_d)<10*numeric_limits<double>::epsilon());
+    EXPECT_TRUE(abs(0-frattura2.plane_d)<Utils::tol_coeff*numeric_limits<double>::epsilon());
 
 }
 
@@ -79,13 +79,13 @@ TEST(calculateIntersectionsPointsTest, intersections)
     vector<Eigen::Vector3d> intersezioni1= Algorithms::calculateIntersectionsPoints(frattura1, line1, point1);
 
     //caso con intersezioni
-    EXPECT_TRUE(abs(0.333333333333333333333333333333333-intersezioni[0][0])<500*numeric_limits<double>::epsilon());
-    EXPECT_TRUE(abs(-0.33333333333333333333333333333333-intersezioni[0][1])<500*numeric_limits<double>::epsilon());
-    EXPECT_TRUE(abs(0-intersezioni[0][2])<500*numeric_limits<double>::epsilon());
+    EXPECT_TRUE(abs(0.333333333333333333333333333333333-intersezioni[0][0])<Utils::tol_coeff*numeric_limits<double>::epsilon());
+    EXPECT_TRUE(abs(-0.33333333333333333333333333333333-intersezioni[0][1])<Utils::tol_coeff*numeric_limits<double>::epsilon());
+    EXPECT_TRUE(abs(0-intersezioni[0][2])<Utils::tol_coeff*numeric_limits<double>::epsilon());
 
-    EXPECT_TRUE(abs(2.0769230769231-intersezioni[1][0])<500*numeric_limits<double>::epsilon());
-    EXPECT_TRUE(abs(3.1538461538462-intersezioni[1][1])<500*numeric_limits<double>::epsilon());
-    EXPECT_TRUE(abs(0-intersezioni[1][2])<500*numeric_limits<double>::epsilon());
+    EXPECT_TRUE(abs(2.0769230769231-intersezioni[1][0])<Utils::tol_coeff*numeric_limits<double>::epsilon());
+    EXPECT_TRUE(abs(3.1538461538462-intersezioni[1][1])<Utils::tol_coeff*numeric_limits<double>::epsilon());
+    EXPECT_TRUE(abs(0-intersezioni[1][2])<Utils::tol_coeff*numeric_limits<double>::epsilon());
 
     //caso senza intersezioni
     ASSERT_EQ(0,intersezioni1.size());
@@ -219,7 +219,7 @@ TEST(zero_caso_interna_passante,norma_della_differenza_tra_punti_intersezione_co
         p2[k] = mesh.traces_vertices[0][1][k];
     }
     /* test per verificare correzza traccia */
-    EXPECT_TRUE(((p1-p1_real).norm() + (p2-p2_real).norm() < 10 * numeric_limits<double>::epsilon())||((p1-p2_real).norm() + (p2-p1_real).norm() < 10 * numeric_limits<double>::epsilon()));
+    EXPECT_TRUE(((p1-p1_real).norm() + (p2-p2_real).norm() < Utils::tol_coeff * numeric_limits<double>::epsilon())||((p1-p2_real).norm() + (p2-p1_real).norm() < Utils::tol_coeff * numeric_limits<double>::epsilon()));
     /* test per verificare correttezza traccia passante o meno per le due date fratture */
     /* mi aspetto interna per h1 e passante per h2 */
     EXPECT_EQ(0,h1.passant_traces.size());
@@ -278,7 +278,7 @@ TEST(zero_caso_interna_interna,norma_della_differenza_tra_punti_intersezione_cor
         p2[k] = mesh.traces_vertices[0][1][k];
     }
     /* test per verificare correttezza vertici traccia */
-    EXPECT_TRUE(((p1-p1_real).norm() + (p2-p2_real).norm() < 10 * numeric_limits<double>::epsilon())||((p1-p2_real).norm() + (p2-p1_real).norm() < 10 * numeric_limits<double>::epsilon()));
+    EXPECT_TRUE(((p1-p1_real).norm() + (p2-p2_real).norm() < Utils::tol_coeff * numeric_limits<double>::epsilon())||((p1-p2_real).norm() + (p2-p1_real).norm() < Utils::tol_coeff * numeric_limits<double>::epsilon()));
     /* test per verificare correttezza traccia passante o meno per le due date fratture */
     /* mi aspetto sia interna sia per h1 che per h2 */
     EXPECT_EQ(0,h1.passant_traces.size());
