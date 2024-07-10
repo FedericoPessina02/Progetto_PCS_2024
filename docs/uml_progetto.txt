@@ -2,16 +2,19 @@
 
 package Internals{
 
-class Fracture {
+struct Fracture {
 	+ id: unsigned int
 	+ num_vertices: unsigned int
 	+ vertices: MatrixXd
 	+ passing_traces: vector<unsigned int>
-	+ internal_traces: vector<unsigned int>
-	- plane_normal: Vector3d
-	- sphere_radius: double
+	+ internal_traces: vector <unsigned int>
+	+ plane_normal: Vector3d
+	+ radius: double
+	+ plane_d: double
+	+ barycenter: Vector3d
 	+ void Fracture(id, num_vertices, vertices)
-	+ void generateTraces(other: Fracture, TracesMesh* mesh)
+	+ void generateTrace(other: Fracture, mesh: TracesMesh)
+	+ void cutMeshBySegment(mesh: PolygonalMesh, a: Vector3d, b: Vector3d, cached_coeffs: const map<unsigned int, Vector2d>)
 	+ PolygonalMesh generatePolygonalMesh()
 }
 
@@ -21,7 +24,7 @@ struct TracesMesh {
 	+ traces_fracture: vector<array<unsigned int,2>>
 	+ traces_length: vector<double>
 	+ void TracesMesh()
-	+ void addTrace()
+	+ void addTrace(id: unsigned_int, vertices: array<Vector3d,2>, fractures: array<unsigned int,2>)
 }
 
 struct PolygonalMesh {
@@ -33,39 +36,56 @@ struct PolygonalMesh {
   + IdCell2Ds: vector<unsigned int>
   + VerticesCell2Ds: vector<vector<unsigned int>>
   + EdgesCell2Ds: vector<vector<unsigned int>>
+  + normal : Vector3d
   + void PolygonalMesh()
+  + unsigned_int addPoint(point: Vector3d)
+  + unsigned_int addEdge(a: unsigned_int, b: unsigned_int)
 }
 
 struct Global {
 	+ fractures: vector<Fracture>
+	+ id_to_fractures: map<int, vector<Fracture>>
 	+ cut_fractures: vector<PolygonalMesh>
 	+ traces: TracesMesh
 }
 
 package Algorithms <<Rectangle>> {
-  protocol calculateTraces {
-    Ottimizza le fratture da intersecare e chiama l'algoritmo
+  protocol assignPartition {
   }
-  protocol cutFractures {
-    Utilizza le informazioni contenute nell'istanza della frattura
-    per produrre una mesh della frattura tagliata
+  protocol cutTraces {
   }
-  protocol sortTraces {
-    Ordina un array di tracce in base alla lunghezza (Heapsort?)
+  protocol cutTracesInsidePartition {
+  }
+  protocol cutTracesOverlapping {
+  }
+  protocol cutPolygonalMeshMultithread {
+  }
+  protocol ordinaFract {
   }
 }
 
 package Utils <<Rectangle>> {
   protocol FractureInput {
-    Legge il file di input con le fratture
   }
-  protocol TraceOutput {
-    Crea il file di output con l'elenco delle tracce
+  protocol Stampa1 {
   }
-  protocol PolygonalMeshOutput {
-    Esporta le mesh ritagliate con paraview
+  protocol ExportSTL {
+    Esporta le mesh ritagliate in formato .STL
+  }
+  protocol MergeSort {
+  }
+  protocol BubbleSort {
+  }
+  protocol IntroSort {
   }
 }
+
+ordinaFract --> IntroSort
+ordinaFract --> MergeSort
+ordinaFract --> BubbleSort
+cutTraces --> cutTracesInsidePartition
+cutTraces --> cutTracesOverlapping
+cutPolygonalMeshMultithread --> Fracture
 
 }
 

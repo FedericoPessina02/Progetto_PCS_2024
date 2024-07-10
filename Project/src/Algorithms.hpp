@@ -19,8 +19,6 @@ void cutTracesOverlapping(vector<Fracture>& overlapping, vector<Fracture>& other
 
 void cutTraces(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh);
 
-void cutTracesMultithread(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh);
-
 vector<PolygonalMesh> cutPolygonalMesh(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& traces_mesh);
 
 vector<PolygonalMesh> cutPolygonalMeshMultithread(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& traces_mesh);
