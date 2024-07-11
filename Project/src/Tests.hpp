@@ -338,12 +338,12 @@ TEST(poligoni_tagliati_by_hand,poligoni_tagliati_da_cutPolygonBySegment) //cutPo
     vertici_da_algoritmo.reserve(8);
     unsigned int j = 0;
     for (unsigned int& polygon_id: mesh.activatedPolygons) {
-        cout << polygon_id << endl;
+        //cout << polygon_id << endl;
         for (unsigned int i = 0; i < mesh.VerticesCell2Ds[polygon_id].size(); i ++){
             vertici_da_algoritmo.push_back(mesh.VerticesCell2Ds[polygon_id][i]);
-            cout << "  " << mesh.VerticesCell2Ds[polygon_id][i];
+            //cout << "  " << mesh.VerticesCell2Ds[polygon_id][i];
         }
-         cout << endl;
+         //cout << endl;
     }
     if (vertici_da_algoritmo.size() != vertici_giusti.size()){
         ASSERT_EQ(0,1); //numero di vertici totali differente
@@ -428,10 +428,10 @@ TEST(poligoni_corretti_e_ordinati_in_senso_antiorario,poligoni_forniti_da_algori
     for (unsigned int i = 0; i < mesh.activatedPolygons.size(); i++){
         unsigned int k = mesh.activatedPolygons[i];
         vector<unsigned int> vi;
-        cout << endl;
+        //cout << endl;
         for (unsigned int j = 0; j < mesh.VerticesCell2Ds[i].size(); j++){
             vi.push_back(mesh.VerticesCell2Ds[k][j]);
-            cout << " " << mesh.VerticesCell2Ds[k][j];
+            //cout << " " << mesh.VerticesCell2Ds[k][j];
         }
         calculated_vectors.push_back(vi);
     }
@@ -452,7 +452,7 @@ TEST(poligoni_corretti_e_ordinati_in_senso_antiorario,poligoni_forniti_da_algori
     // }
     for (unsigned int l = 0; l < 4; l++){ //controllo che i poligoni salvati siano quelli che mi aspetto in senso antiorario
         for (unsigned int i = 0; i < calculated_vectors.size(); i++){
-            cout << endl;
+            //cout << endl;
             for (unsigned int j = 0; j < calculated_vectors[i].size(); j++){
                 //cout << "   " << calculated_vectors[i][j];
                 for (unsigned int k = 0; k < (true_vectors[l].size()+1)/2; k++){

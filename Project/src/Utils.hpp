@@ -3,6 +3,7 @@
 #include <vector>
 #include "classes/Fracture.hpp"
 #include "Eigen/Eigen"
+#include "PolygonalMesh.hpp"
 
 using namespace std;
 

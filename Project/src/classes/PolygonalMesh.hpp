@@ -19,7 +19,7 @@ struct PolygonalMesh {
     PolygonalMesh() = default;
     unsigned int addPoint(Eigen::Vector3d point) {
         for (unsigned int i = 0; i < CoordinateCell0Ds.size(); i++) {
-            if ((point-CoordinateCell0Ds[i]).squaredNorm() < 5*numeric_limits<double>::epsilon()) {
+            if ((point-CoordinateCell0Ds[i]).squaredNorm() < 500*numeric_limits<double>::epsilon()) {
                 return i;
             }
         }

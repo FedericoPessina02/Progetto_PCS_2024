@@ -60,7 +60,13 @@ package Algorithms <<Rectangle>> {
   }
   protocol cutPolygonalMeshMultithread {
   }
-  protocol ordinaFract {
+  protocol ordinaTracce {
+  }
+  protocol calculateIntersectionsPoints{
+  }
+  protocol cutPolygonBySegment{
+  }
+  protocol ordinaTracce{
   }
 }
 
@@ -78,14 +84,29 @@ package Utils <<Rectangle>> {
   }
   protocol IntroSort {
   }
+  protocol calculateDistinctPoints{
+  }
+  protocol compareSegments{
+  }
 }
 
-ordinaFract --> IntroSort
-ordinaFract --> MergeSort
-ordinaFract --> BubbleSort
-cutTraces --> cutTracesInsidePartition
-cutTraces --> cutTracesOverlapping
-cutPolygonalMeshMultithread --> Fracture
+FractureInput -[#blue]-> Fracture 
+Global::id_to_fractures -[#red]-> cutTraces
+assignPartition <-[#red]- Fracture : "colloca fratture nelle partizioni"
+ordinaTracce -[#red]-> IntroSort
+ordinaTracce -[#red]-> MergeSort
+ordinaTracce -[#red]-> BubbleSort
+cutTraces -[#red]-> cutTracesInsidePartition : "Smistamento"
+cutTraces -[#red]-> cutTracesOverlapping
+TracesMesh -[#red]-> cutTraces : "Fornisce elenco tracce da riempire"
+cutTracesInsidePartition -[#red]-> Fracture::generateTrace
+cutTracesOverlapping -[#red]-> Fracture::generateTrace
+Fracture -[#red]-> Stampa1
+
+Fracture::generatePolygonalMesh -[#green]-> Fracture::cutMeshBySegment
+Fracture::cutMeshBySegment -[#green]-> cutPolygonBySegment
+cutPolygonBySegment -[#green]-> ExportSTL
+
 
 }
 

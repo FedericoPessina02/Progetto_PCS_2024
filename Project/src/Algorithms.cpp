@@ -316,7 +316,7 @@ void cutPolygonBySegment(Fracture& fracture, PolygonalMesh& mesh, unsigned int p
     mesh.EdgesCell2Ds.push_back(polygon_b_edges);
 }
 
-void ordinaFract(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh, string nome_file){
+void ordinaTracce(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh, string nome_file){
     ofstream ofs(nome_file);
     if (! ofs.is_open()){
         cerr<< "errore di apertura del file di output \n";

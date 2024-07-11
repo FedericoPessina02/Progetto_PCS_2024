@@ -24,7 +24,7 @@ int main(int argc, char **argv)
     std::cout << "traces: " << std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_begin).count() << endl;
     t_begin = std::chrono::steady_clock::now();
     Utils::Stampa1("results1.csv",mesh);
-    Algorithms::ordinaFract(id_to_fractures, mesh,"results2.csv");
+    Algorithms::ordinaTracce(id_to_fractures, mesh,"results2.csv");
     t_end = std::chrono::steady_clock::now();
     std::cout << "sorting / io: " << std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_begin).count() << endl;
     t_begin = std::chrono::steady_clock::now();

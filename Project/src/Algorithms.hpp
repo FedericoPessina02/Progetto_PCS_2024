@@ -25,6 +25,6 @@ vector<PolygonalMesh> cutPolygonalMeshMultithread(map<int, vector<Fracture>>& id
 
 void cutPolygonBySegment(Fracture& fracture, PolygonalMesh& mesh, unsigned int polygonId, vector<unsigned int> total_points, array<unsigned int,2> segment);
 
-void ordinaFract(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh, string nome_file);
+void ordinaTracce(map<int, vector<Fracture>>& id_to_fractures, TracesMesh& mesh, string nome_file);
 
 }
