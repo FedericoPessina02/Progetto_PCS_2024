@@ -1,0 +1,108 @@
+\chapter{Struttura del codice}
+
+
+Il programma utilizza 3 classi principali: \newline \newline
+\textbf{-Fracture:}
+E' la classe di una singola frattura, contenente tutte le sue caratteristiche e i rispettivi metodi.
+Oltre alle ovvie informazioni quali id, matrice dei vertici ecc... in essa sono presenti: \*internal\_traces e passant\_traces : contenente gli id delle tracce di tale frattura (rispettivamenete interne nel primo caso e passanti nel secondo);
+
+partition\_id : ovvero la partizione dello spazio a cui appartiene la frattura.
+
+Tale informazione risulta fondamentale per ridurre i tempi di calcolo (e verrà spiegata più nel dettaglio nella terza sezione della relazione)
+
+\textbf{-TracesMesh:}
+
+E' l'elenco di tutte le tracce
+
+Le informazioni contenute sono ad esempio gli Id della traccia, la lunghezza, le fratture che l'hanno generata, le coordinate dei vertici estremi, ecc
+
+\textbf{-PolygonalMesh:}
+
+E' la mesh di ogni singola frattura.
+
+Risulta fondamentale per per il secondo punto del progetto, in quanto in essa vengono salvati tutti i nuovi poligoni generati dai tagli.
+
+Come di consuetudine, è stata divisa in celle 0Ds ovvero i vertici, 1Ds ovvero i lati e 2Ds ovvero i poligoni.
+
+
+Il codice (e di conseguenza quindi anche le funzioni) è invece stato diviso su più file:
+
+\textbf{-main.cpp:}
+
+Il suo scopo principale è quello di chiamare le funzioni (attivando così una cascata di chiamate ricorsive) e di calcolare i tempi impiegati dal codice (fondamentale per confermare che le scelte di ottimizzazione prese, fossero effettivamente vantaggiose)
+
+
+\textbf{-Algorithms.cpp:}
+
+In esso sono contenute tutte le funzioni che operano sulle fratture e sulle tracce, in grado di fornire i risultati concreti ricercati e necessari per l'avanzamento dell'algoritmo, a partire dalle strutture dati già munite degli input necessari
+
+
+\textbf{-Utils.cpp:}
+
+contiene le funzioni necessarie per il funzionamento del programma, più slegate tutta via dal procedimento logico puramente inerente allo studio delle fratture e delle tracce. Ne sono un esempio le funzioni di stampa, di lettura e salvataggio dei dati, di comparazione...
+
+\textbf{-Test.hpp:}
+
+in questo file viene testata la correttezza di tutte le principali funzioni utilizzate. E' di fondamentale importanza in quanto permette di concentrarsi esclusivamente sulla progettazione logica del problema, escludendo i casi in cui il procedimento è giusto ma l'output ottenuto è sbagliato.
+
+
+
+\subsection{Scelte logiche e procedimento}
+
+
+\textbf{-consegna numero 1:}
+
+
+Per quanto riguarda la risoluzione della prima richiesta del progetto, la porzione di codice che ha fornito il maggiore contributo, richiedendo così numerose scelte sia a livello procedurale che implementativo, è collocata all'interno di Fracture.cpp e più precisamente è il metodo \textit{GenerateTrace}. \newline
+
+
+Tale metodo infatti viene applicato su una frattura, e consiste nel confrontarla con un'altra frattura appartenente alla sua stessa partizione e con il baricentro sufficientemente vicino, calcolare la traccia generata da esse e infine distinguerne la natura (passante o interna).
+
+Per fare ciò sono necessari più passaggi e la divisione su più casistiche:
+
+Cercare l'equazioni dei piani su cui giacciono le fratture, e calcolarne l'intersezione che sarà dunque una retta (a meno di fratture parallele)
+
+Cercare l'intersezione tra tale retta e le due fratture, e trovare quanti di questi punti siano DISTINTI. In base al numero di punti ottenuti, siamo in grado di catalogare il tipo di traccia:
+
+2: i punti di intersezione coincidono a coppie e la traccia è passante per entrambe le fratture
+
+3: un punto di intersezione è in comune per entrambe le fratture. Trovato quel punto, il segmento di lunghezza minore sarà la traccia, e risulterà passante per la frattura che ha entrambi i vertici della traccia sul bordo, e interna per l'altra
+
+4: Innanzitutto cerco il punto estremo, e i due punti più vicino ad esso, e poi catalogo per tutti i casi che possono capitare:
+
+il segmento di intersezione è esterno ad entrambi i poligoni: non c'è traccia
+
+se i due punti vicini (e non l'estremo) appartengono alla stessa frattura, la traccia sarà il segmento di unione tra questi due punti, e sarà passante per quest'ultima e interna per l'altra.
+
+se i due punti vicini (e non l'estremo) NON appartengono alla stessa frattura, la traccia sarà il segmento di unione tra questi due punti, e sarà interna per entrambe le fratture \newline
+
+\textbf{-consegna numero 2:}
+
+
+Per quanto riguarda la risoluzione della seconda richiesta del progetto invece, il metodo che contiene il procedimento risolutivo, è sempre contenuto in Fracture.cpp e si chiama
+
+CutPolygonalMesh.
+
+
+Tale metodo permette di, data una frattura, tagliarla progressivamente in più fratture seguendo le tracce (rigorosamente effettuando i tagli prima lungo le tracce passanti e poi quelle interne, ordinate entrambe per lunghezza decrescente) e aggiornare la mesh con i dati delle fratture ottenute.
+
+Per fare ciò, a partire da una mesh contenente delle fratture (attive e non), si riconduce ricorsivamente a casistiche sempre più facili da studiare attraverso alle chiamate del metodo CutMeshBySegment e della funzione Algorithms::CutPolygonBySegment.
+
+
+Analizzandola più nel dettaglio, le casistiche da gestire e gli accorgimenti da adottare per potersi ricondurre al caso più banale di un singolo poligono tagliato da una traccia passante, sono raggruppabili in tale modo:
+
+mesh costituita da una sola frattura attiva (primo step) o da più fratture, alcune attive e altre disattivate (step successivi)
+
+operazione di taglio lanciata su una traccia passante (caso banale) o traccia interna (caso più complicato).
+
+Nel caso di una traccia interna, sarà necessario ricondursi ad una traccia passante:
+
+viene prolungata la traccia
+
+si cerca l'intersezione tra la retta su cui giace la traccia e ogni lato del poligono
+
+si verifica quali coefficienti trovati dalla soluzione di tale sistema siano compresi tra 0 e 1 (ciò garantisce che la combinazione sia convessa e l'intersezione avvenga all'interno del lato e non sul suo prolungamento)
+
+si verifica che venga tagliato solo uno dei poligoni attivi
+
+Infine, arrivati al caso banale, CutPolygonBySegments effettua il taglio e la creazione di due nuove fratture attive, disattivando la frattura padre precedente, e garantisce un'uniformità nell'ordinamento dei vertici (vecchi e nuovi) di ciascuna frattura generata.

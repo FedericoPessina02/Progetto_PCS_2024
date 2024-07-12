@@ -1,0 +1,88 @@
+\documentclass[a4paper,12pt]{report}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{lmodern}
+\usepackage{hyperref}
+\usepackage{geometry}
+\hypersetup{%
+    pdfpagemode={UseOutlines},
+    bookmarksopen,
+    pdfstartview={FitH},
+    colorlinks,
+    linkcolor={blue},
+    citecolor={blue},
+    urlcolor={blue}
+  }
+\newtheorem{theorem}{Teorema}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollario}
+\newtheorem{definition}{Definizione}
+  
+\begin{document}\errorcontextlines=9 %numero massimo di linee che hanno un errore
+
+  
+\begin{titlepage}
+\newgeometry{left=1cm,right=1cm,top=3cm,bottom=3.5cm}  %specific margins for this page
+
+\begin{center}
+
+{\huge POLITECNICO DI TORINO}\\[1.5cm]
+\textbf{Corso di Laurea\\in Matematica per l'Ingegneria}\\[3cm]
+%\textbf{Corso di Laurea Magistrale\\in Ingegneria Matematica}\\[3cm]
+
+{\Large Progetto di}\\[1cm]
+%{\Large Tesi di Laurea Magistrale}\\[0.5cm]
+\textbf{\LARGE Programmazione e calcolo scientifico }\\[2cm]
+\includegraphics[width=0.26\textwidth]{polito_logo}
+\vspace{4cm}
+
+%\customfont{hello world!}
+
+\begin{minipage}{0.85\textwidth}
+\begin{flushleft}\large
+\textbf{Partecipanti} \hfill \textbf{Matricole}\\
+Emanuele Martin \hfill 296214 \\
+Andrea Terenziani \hfill 284817 \\
+Federico Pessina \hfill 293945 \\
+% \fillin\ \hfill \\
+% \fillin\ \hfill \fillin
+\end{flushleft}
+\end{minipage}
+
+\vfill
+
+Anno Accademico 2023-2024
+\end{center}
+
+\restoregeometry %restore default margins 
+
+\end{titlepage}
+
+\chapter*{Introduzione}
+Il progetto assegnato fornisce in input un DFN (Discrete Fracture Network, ovvero un sistema di poligoni planari, detti fratture, intersecati tra di loro) e richiede due consegne differenti:
+
+innanzitutto di individuare e catalogare le intersezioni tra i poligoni, dette tracce, in passanti e interne, e secondariamente di tagliare i poligoni seguendo le tracce stesse e utilizzando come gerarchia di taglio prima le tracce passanti (ordinate per lunghezza decrescente) e successivamente quelle interne (sempre in ordine di lunghezza decrescente).
+
+
+Per progettare e sviluppare il codice risolutivo, ci siamo soffermati su 3 fasi principali, che hanno reso possibile in primis il raggiungimento degli output richiesti dalla consegna, e in secondo luogo hanno reso il programma più facilmente leggibile e computazionalmente efficace (e di conseguenza dunque, ottimale in ottica di tempistiche risolutive):
+
+-organizzazione del codice: ovvero la suddivisione su più file e varie classi, per rendere il lavoro più leggibile, ordinato e lineare da programmare.
+
+-scelte logiche e procedimento: ovvero la fase di decisione su come approcciarsi al problema stesso e quali meccanismi risolutivi fossero necessari in ciascuna funzione utilizzata.
+
+-ottimizzazione algoritmo e strutture dati: ovvero una fase più tecnica, in cui vengono presi numerosi accorgimenti per rendere il codice performante, rapido e computazionalmente vantaggioso.
+
+
+\tableofcontents
+\include{Capitolo_1}
+\include{Capitolo_2}
+
+
+\end{document}
