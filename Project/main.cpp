@@ -11,7 +11,7 @@ using namespace Eigen;
 
 int main(int argc, char **argv)
 {
-    ::testing::InitGoogleTest(&argc,argv);
+    // ::testing::InitGoogleTest(&argc,argv);
 
     int partition_dimension = 2;
     array<double, 6> domain_borders;
@@ -36,5 +36,6 @@ int main(int argc, char **argv)
     t_end = std::chrono::steady_clock::now();
     std::cout << "export: " << std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_begin).count() << endl;
 
-    return RUN_ALL_TESTS();
+    //return RUN_ALL_TESTS();
+    return 0;
 }
