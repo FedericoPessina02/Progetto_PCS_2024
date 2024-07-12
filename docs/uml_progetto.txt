@@ -51,16 +51,19 @@ struct Global {
 
 package Algorithms <<Rectangle>> {
   protocol assignPartition {
+  Analizza la locazione di ogni frattura e stabilisce a quale partizione appartiene
   }
   protocol cutTraces {
+  Organizza la comparazione delle fratture per cercare intersezioni
   }
   protocol cutTracesInsidePartition {
+  Esegue i confronti tra fratture appartenenti alla stessa partizione
   }
   protocol cutTracesOverlapping {
+  Esegue i confronti tra fratture appartenenti a una partizione e le fratture degeneri
   }
   protocol cutPolygonalMeshMultithread {
-  }
-  protocol ordinaTracce {
+  Lancia la creazione delle pmesh poligonali organizzando il lavoro in processi paralleli
   }
   protocol calculateIntersectionsPoints{
   }
@@ -116,7 +119,7 @@ package Eigen <<Rectangle>> {
 }
 package GoogleTest <<Rectangle>> {
 }
-package Paraview <<Rectangle>> {
+package Matplotlib <<Rectangle>> {
 }
 
 }
