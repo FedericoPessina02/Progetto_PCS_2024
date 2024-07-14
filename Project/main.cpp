@@ -11,11 +11,9 @@ using namespace Eigen;
 
 int main(int argc, char **argv)
 {
-    // ::testing::InitGoogleTest(&argc,argv);
-
     int partition_dimension = 2;
     array<double, 6> domain_borders;
-    vector<Fracture> fractures = Utils::fractureInput("./DFN/FR10_data.txt", domain_borders); //elenco fratture
+    vector<Fracture> fractures = Utils::fractureInput("./DFN/FR50_data.txt", domain_borders); //elenco fratture
     map<int, vector<Fracture>> id_to_fractures = Algorithms::assignPartition(fractures, domain_borders, partition_dimension);
     TracesMesh mesh;
     std::chrono::steady_clock::time_point t_begin = std::chrono::steady_clock::now();
@@ -36,6 +34,6 @@ int main(int argc, char **argv)
     t_end = std::chrono::steady_clock::now();
     std::cout << "export: " << std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_begin).count() << endl;
 
-    //return RUN_ALL_TESTS();
-    return 0;
+    ::testing::InitGoogleTest(&argc,argv);
+    return RUN_ALL_TESTS();
 }

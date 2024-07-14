@@ -30,12 +30,12 @@ struct PolygonalMesh {
     }
     unsigned int addEdge(unsigned int a, unsigned int b) {
         for (unsigned int i = 0; i < VerticesCell1Ds.size(); i++) {
-            if ((CoordinateCell0Ds[VerticesCell1Ds[i][0]] - CoordinateCell0Ds[a]).squaredNorm() < 5*numeric_limits<double>::epsilon() &&
-                (CoordinateCell0Ds[VerticesCell1Ds[i][1]] - CoordinateCell0Ds[b]).squaredNorm() < 5*numeric_limits<double>::epsilon()) {
+            if ((CoordinateCell0Ds[VerticesCell1Ds[i][0]] - CoordinateCell0Ds[a]).squaredNorm() < 500*numeric_limits<double>::epsilon() &&
+                (CoordinateCell0Ds[VerticesCell1Ds[i][1]] - CoordinateCell0Ds[b]).squaredNorm() < 500*numeric_limits<double>::epsilon()) {
                 return i;
             }
-            if ((CoordinateCell0Ds[VerticesCell1Ds[i][1]] - CoordinateCell0Ds[a]).squaredNorm() < 5*numeric_limits<double>::epsilon() &&
-                (CoordinateCell0Ds[VerticesCell1Ds[i][0]] - CoordinateCell0Ds[b]).squaredNorm() < 5*numeric_limits<double>::epsilon()) {
+            if ((CoordinateCell0Ds[VerticesCell1Ds[i][1]] - CoordinateCell0Ds[a]).squaredNorm() < 500*numeric_limits<double>::epsilon() &&
+                (CoordinateCell0Ds[VerticesCell1Ds[i][0]] - CoordinateCell0Ds[b]).squaredNorm() < 500*numeric_limits<double>::epsilon()) {
                 return i;
             }
         }
@@ -46,12 +46,12 @@ struct PolygonalMesh {
     }
     unsigned int findEdge(unsigned int a, unsigned int b) {
         for (unsigned int i = 0; i < VerticesCell1Ds.size(); i++) {
-            if ((CoordinateCell0Ds[VerticesCell1Ds[i][0]] - CoordinateCell0Ds[a]).squaredNorm() < 5*numeric_limits<double>::epsilon() &&
-                (CoordinateCell0Ds[VerticesCell1Ds[i][1]] - CoordinateCell0Ds[b]).squaredNorm() < 5*numeric_limits<double>::epsilon()) {
+            if ((CoordinateCell0Ds[VerticesCell1Ds[i][0]] - CoordinateCell0Ds[a]).squaredNorm() < 500*numeric_limits<double>::epsilon() &&
+                (CoordinateCell0Ds[VerticesCell1Ds[i][1]] - CoordinateCell0Ds[b]).squaredNorm() < 500*numeric_limits<double>::epsilon()) {
                 return i;
             }
-            if ((CoordinateCell0Ds[VerticesCell1Ds[i][1]] - CoordinateCell0Ds[a]).squaredNorm() < 5*numeric_limits<double>::epsilon() &&
-                (CoordinateCell0Ds[VerticesCell1Ds[i][0]] - CoordinateCell0Ds[b]).squaredNorm() < 5*numeric_limits<double>::epsilon()) {
+            if ((CoordinateCell0Ds[VerticesCell1Ds[i][1]] - CoordinateCell0Ds[a]).squaredNorm() < 500*numeric_limits<double>::epsilon() &&
+                (CoordinateCell0Ds[VerticesCell1Ds[i][0]] - CoordinateCell0Ds[b]).squaredNorm() < 500*numeric_limits<double>::epsilon()) {
                 return i;
             }
         }
